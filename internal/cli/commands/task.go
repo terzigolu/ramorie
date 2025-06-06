@@ -3,10 +3,13 @@ package commands
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/terzigolu/josepshbrain-go/internal/cli/interactive"
 	"github.com/terzigolu/josepshbrain-go/pkg/models"
+	"golang.org/x/term"
 	"gorm.io/gorm"
 )
 
@@ -94,36 +97,59 @@ func newTaskCreateCmd(db *gorm.DB) *cobra.Command {
 
 // task list
 func newTaskListCmd(db *gorm.DB) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "list",
-		Short:   "List all tasks",
+		Short:   "List tasks for the active project",
 		Aliases: []string{"ls"},
 		Run: func(cmd *cobra.Command, args []string) {
+			allProjects, _ := cmd.Flags().GetBool("all")
+			status, _ := cmd.Flags().GetString("status")
+			
+			// Get active project unless --all flag is used
+			var project models.Project
+			if !allProjects {
+				result := db.Where("is_active = ? AND deleted_at IS NULL", true).First(&project)
+				if result.Error != nil {
+					fmt.Println("❌ No active project found")
+					fmt.Println("💡 Use 'jbraincli use <project>' to set an active project")
+					fmt.Println("💡 Or use --all flag to see tasks from all projects")
+					return
+				}
+			}
+
+			// Build query for tasks
+			query := db.Preload("Project")
+			if !allProjects {
+				query = query.Where("project_id = ?", project.ID)
+			}
+			if status != "" {
+				query = query.Where("status = ?", strings.ToUpper(status))
+			}
+
 			var tasks []models.Task
-			if err := db.Preload("Project").Find(&tasks).Error; err != nil {
+			if err := query.Find(&tasks).Error; err != nil {
 				log.Fatalf("Failed to fetch tasks: %v", err)
 			}
 
 			if len(tasks) == 0 {
-				fmt.Println("📋 No tasks found. Create one with 'jbraincli task create <description>'")
+				if !allProjects {
+					fmt.Printf("📋 No tasks found in project '%s'\n", project.Name)
+				} else {
+					fmt.Println("📋 No tasks found in any project")
+				}
+				fmt.Println("💡 Create one with 'jbraincli task create <description>'")
 				return
 			}
 
-			fmt.Println("📋 Task List:")
-			fmt.Println("┌─────────────────────────────────────────┬───────────────────────────┬──────────────┬──────────┐")
-			fmt.Println("│ ID                                      │ Description               │ Status       │ Priority │")
-			fmt.Println("├─────────────────────────────────────────┼───────────────────────────┼──────────────┼──────────┤")
-			
-			for _, task := range tasks {
-				fmt.Printf("│ %-39s │ %-25s │ %-12s │ %-8s │\n", 
-					task.ID.String()[:8]+"...", 
-					truncateString(task.Description, 25),
-					string(task.Status),
-					string(task.Priority))
-			}
-			fmt.Println("└─────────────────────────────────────────┴───────────────────────────┴──────────────┴──────────┘")
+			// Display beautiful task list
+			displayTaskList(tasks, project.Name, allProjects, status)
 		},
 	}
+	
+	cmd.Flags().BoolP("all", "a", false, "Show tasks from all projects")
+	cmd.Flags().StringP("status", "s", "", "Filter by status (TODO, IN_PROGRESS, IN_REVIEW, COMPLETED)")
+	
+	return cmd
 }
 
 // task start
@@ -281,5 +307,273 @@ func newTaskInfoCmd(db *gorm.DB) *cobra.Command {
 	}
 }
 
+// displayTaskList shows tasks in a beautiful, responsive format
+func displayTaskList(tasks []models.Task, projectName string, allProjects bool, statusFilter string) {
+	// Import terminal width detection
+	var width int = 80 // default width
+	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+		width = w
+	}
 
- 
+	// Header with project info
+	if allProjects {
+		if statusFilter != "" {
+			fmt.Printf("📋 %s Tasks from All Projects (%d)\n", strings.ToUpper(statusFilter), len(tasks))
+		} else {
+			fmt.Printf("📋 All Tasks from All Projects (%d)\n", len(tasks))
+		}
+	} else {
+		if statusFilter != "" {
+			fmt.Printf("📋 %s Tasks - %s (%d)\n", strings.ToUpper(statusFilter), projectName, len(tasks))
+		} else {
+			fmt.Printf("📋 Tasks - %s (%d)\n", projectName, len(tasks))
+		}
+	}
+
+	// Generate unique short IDs (reuse from kanban)
+	uniqueIDs := generateUniqueShortIDsForTasks(tasks)
+
+	// Responsive design
+	if width < 100 {
+		// Compact view for narrow terminals
+		displayTaskListCompact(tasks, uniqueIDs, allProjects)
+	} else {
+		// Full table view for wide terminals
+		displayTaskListTable(tasks, uniqueIDs, allProjects, width)
+	}
+}
+
+// displayTaskListCompact shows tasks in compact format
+func displayTaskListCompact(tasks []models.Task, uniqueIDs map[string]string, allProjects bool) {
+	fmt.Println()
+	for i, task := range tasks {
+		// Priority and status icons
+		priorityIcon := getPriorityIconForTask(task.Priority)
+		statusIcon := getStatusIconForTask(task.Status)
+		
+		// Progress indicator
+		progressBar := getProgressBar(task.Progress, 8)
+		
+		fmt.Printf("%s %s %s %s\n", 
+			priorityIcon, 
+			statusIcon, 
+			uniqueIDs[task.ID.String()], 
+			task.Description)
+		
+		if allProjects && task.Project != nil {
+			fmt.Printf("   🏢 %s", task.Project.Name)
+		}
+		
+		if task.Progress > 0 {
+			fmt.Printf("   %s %d%%", progressBar, task.Progress)
+		}
+		
+		fmt.Println()
+		
+		// Add separator between tasks (except last)
+		if i < len(tasks)-1 {
+			fmt.Println("   ─────────────────────────────────────")
+		}
+	}
+}
+
+// displayTaskListTable shows tasks in full table format  
+func displayTaskListTable(tasks []models.Task, uniqueIDs map[string]string, allProjects bool, termWidth int) {
+	// Calculate dynamic column widths
+	idWidth := 12
+	priorityWidth := 4
+	statusWidth := 12
+	progressWidth := 12
+	projectWidth := 0
+	if allProjects {
+		projectWidth = 20
+	}
+	
+	// Remaining width for description
+	usedWidth := idWidth + priorityWidth + statusWidth + progressWidth + projectWidth + 8 // borders and spaces
+	descWidth := termWidth - usedWidth
+	if descWidth < 30 {
+		descWidth = 30
+	}
+
+	// Table header
+	fmt.Println()
+	if allProjects {
+		fmt.Printf("┌─%-*s─┬─%-*s─┬─%-*s─┬─%-*s─┬─%-*s─┬─%-*s─┐\n", 
+			idWidth, strings.Repeat("─", idWidth),
+			priorityWidth, strings.Repeat("─", priorityWidth),
+			statusWidth, strings.Repeat("─", statusWidth),
+			progressWidth, strings.Repeat("─", progressWidth),
+			projectWidth, strings.Repeat("─", projectWidth),
+			descWidth, strings.Repeat("─", descWidth))
+		
+		fmt.Printf("│ %-*s │ %-*s │ %-*s │ %-*s │ %-*s │ %-*s │\n",
+			idWidth, "ID",
+			priorityWidth, "PRI",
+			statusWidth, "STATUS",
+			progressWidth, "PROGRESS",
+			projectWidth, "PROJECT",
+			descWidth, "DESCRIPTION")
+	} else {
+		fmt.Printf("┌─%-*s─┬─%-*s─┬─%-*s─┬─%-*s─┬─%-*s─┐\n", 
+			idWidth, strings.Repeat("─", idWidth),
+			priorityWidth, strings.Repeat("─", priorityWidth),
+			statusWidth, strings.Repeat("─", statusWidth),
+			progressWidth, strings.Repeat("─", progressWidth),
+			descWidth, strings.Repeat("─", descWidth))
+		
+		fmt.Printf("│ %-*s │ %-*s │ %-*s │ %-*s │ %-*s │\n",
+			idWidth, "ID",
+			priorityWidth, "PRI", 
+			statusWidth, "STATUS",
+			progressWidth, "PROGRESS",
+			descWidth, "DESCRIPTION")
+	}
+
+	// Separator
+	if allProjects {
+		fmt.Printf("├─%-*s─┼─%-*s─┼─%-*s─┼─%-*s─┼─%-*s─┼─%-*s─┤\n",
+			idWidth, strings.Repeat("─", idWidth),
+			priorityWidth, strings.Repeat("─", priorityWidth),
+			statusWidth, strings.Repeat("─", statusWidth),
+			progressWidth, strings.Repeat("─", progressWidth),
+			projectWidth, strings.Repeat("─", projectWidth),
+			descWidth, strings.Repeat("─", descWidth))
+	} else {
+		fmt.Printf("├─%-*s─┼─%-*s─┼─%-*s─┼─%-*s─┼─%-*s─┤\n",
+			idWidth, strings.Repeat("─", idWidth),
+			priorityWidth, strings.Repeat("─", priorityWidth),
+			statusWidth, strings.Repeat("─", statusWidth),
+			progressWidth, strings.Repeat("─", progressWidth),
+			descWidth, strings.Repeat("─", descWidth))
+	}
+
+	// Task rows
+	for _, task := range tasks {
+		priorityIcon := getPriorityIconForTask(task.Priority)
+		statusIcon := getStatusIconForTask(task.Status)
+		progressBar := getProgressBar(task.Progress, 10)
+		
+		shortID := uniqueIDs[task.ID.String()]
+		description := truncateString(task.Description, descWidth)
+		
+		if allProjects {
+			projectName := ""
+			if task.Project != nil {
+				projectName = truncateString(task.Project.Name, projectWidth)
+			}
+			
+			fmt.Printf("│ %-*s │ %-*s │ %-*s │ %-*s │ %-*s │ %-*s │\n",
+				idWidth, shortID,
+				priorityWidth, priorityIcon,
+				statusWidth, statusIcon,
+				progressWidth, progressBar,
+				projectWidth, projectName,
+				descWidth, description)
+		} else {
+			fmt.Printf("│ %-*s │ %-*s │ %-*s │ %-*s │ %-*s │\n",
+				idWidth, shortID,
+				priorityWidth, priorityIcon,
+				statusWidth, statusIcon,
+				progressWidth, progressBar,
+				descWidth, description)
+		}
+	}
+
+	// Table footer
+	if allProjects {
+		fmt.Printf("└─%-*s─┴─%-*s─┴─%-*s─┴─%-*s─┴─%-*s─┴─%-*s─┘\n",
+			idWidth, strings.Repeat("─", idWidth),
+			priorityWidth, strings.Repeat("─", priorityWidth),
+			statusWidth, strings.Repeat("─", statusWidth),
+			progressWidth, strings.Repeat("─", progressWidth),
+			projectWidth, strings.Repeat("─", projectWidth),
+			descWidth, strings.Repeat("─", descWidth))
+	} else {
+		fmt.Printf("└─%-*s─┴─%-*s─┴─%-*s─┴─%-*s─┴─%-*s─┘\n",
+			idWidth, strings.Repeat("─", idWidth),
+			priorityWidth, strings.Repeat("─", priorityWidth),
+			statusWidth, strings.Repeat("─", statusWidth),
+			progressWidth, strings.Repeat("─", progressWidth),
+			descWidth, strings.Repeat("─", descWidth))
+	}
+}
+
+// Helper functions for task list display
+func generateUniqueShortIDsForTasks(tasks []models.Task) map[string]string {
+	uniqueIDs := make(map[string]string)
+	usedShortIDs := make(map[string][]string)
+	
+	// First pass: try 8-character IDs
+	for _, task := range tasks {
+		fullID := task.ID.String()
+		shortID := fullID[:8]
+		usedShortIDs[shortID] = append(usedShortIDs[shortID], fullID)
+	}
+	
+	// Second pass: resolve collisions
+	for shortID, fullIDs := range usedShortIDs {
+		if len(fullIDs) == 1 {
+			uniqueIDs[fullIDs[0]] = shortID
+		} else {
+			for _, fullID := range fullIDs {
+				uniqueLen := 8
+				for uniqueLen < len(fullID) {
+					candidate := fullID[:uniqueLen]
+					isUnique := true
+					for _, otherID := range fullIDs {
+						if otherID != fullID && len(otherID) > uniqueLen && otherID[:uniqueLen] == candidate {
+							isUnique = false
+							break
+						}
+					}
+					if isUnique {
+						break
+					}
+					uniqueLen++
+				}
+				uniqueIDs[fullID] = fullID[:uniqueLen]
+			}
+		}
+	}
+	
+	return uniqueIDs
+}
+
+func getPriorityIconForTask(priority string) string {
+	icons := map[string]string{
+		"H": "🔴",
+		"M": "🟡",
+		"L": "🟢",
+	}
+	if icon, exists := icons[priority]; exists {
+		return icon
+	}
+	return "⚪"
+}
+
+func getStatusIconForTask(status string) string {
+	icons := map[string]string{
+		"TODO":        "📋",
+		"IN_PROGRESS": "🚀", 
+		"IN_REVIEW":   "👀",
+		"COMPLETED":   "✅",
+	}
+	if icon, exists := icons[status]; exists {
+		return icon
+	}
+	return "❓"
+}
+
+func getProgressBar(progress int, width int) string {
+	if progress == 0 {
+		return strings.Repeat("░", width)
+	}
+	if progress == 100 {
+		return "✅ 100%"
+	}
+	
+	filled := (progress * width) / 100
+	bar := strings.Repeat("▓", filled) + strings.Repeat("░", width-filled)
+	return fmt.Sprintf("%s %d%%", bar, progress)
+} 
