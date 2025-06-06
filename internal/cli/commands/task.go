@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	"github.com/terzigolu/josepshbrain-go/internal/cli/interactive"
 	"github.com/terzigolu/josepshbrain-go/pkg/models"
 	"gorm.io/gorm"
 )
@@ -29,13 +30,33 @@ func NewTaskCmd(db *gorm.DB) *cobra.Command {
 
 // task create
 func newTaskCreateCmd(db *gorm.DB) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "create [description]",
 		Short:   "Create a new task",
 		Aliases: []string{"add"},
 		Args:    cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			description := args[0]
+			isInteractive, _ := cmd.Flags().GetBool("interactive")
+			
+			var description string
+			var priority string = "M" // default medium
+			
+			if isInteractive {
+				// Interactive mode
+				task, err := interactive.CreateTaskInteractive()
+				if err != nil {
+					log.Fatalf("Interactive task creation failed: %v", err)
+				}
+				description = task.Description
+				priority = task.Priority
+			} else {
+				// Traditional CLI mode
+				if len(args) == 0 {
+					fmt.Println("❌ Description required (or use --interactive)")
+					return
+				}
+				description = args[0]
+			}
 			
 			// Get active project - require one to exist
 			var project models.Project
@@ -51,7 +72,7 @@ func newTaskCreateCmd(db *gorm.DB) *cobra.Command {
 				ProjectID:   project.ID,
 				Description: description,
 				Status:      string(models.TaskStatusTODO),
-				Priority:    string(models.TaskPriorityMedium),
+				Priority:    priority,
 				Progress:    0,
 			}
 
@@ -63,6 +84,12 @@ func newTaskCreateCmd(db *gorm.DB) *cobra.Command {
 			fmt.Printf("✅ Task ID: %s\n", task.ID.String())
 		},
 	}
+	
+	// Add interactive flag
+	cmd.Flags().BoolP("interactive", "i", false, "Use interactive mode for task creation")
+	cmd.Args = cobra.MinimumNArgs(0) // Make args optional when using interactive
+	
+	return cmd
 }
 
 // task list
@@ -101,16 +128,43 @@ func newTaskListCmd(db *gorm.DB) *cobra.Command {
 
 // task start
 func newTaskStartCmd(db *gorm.DB) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "start [id]",
 		Short: "Start working on a task",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
-			taskID := args[0]
+			isInteractive, _ := cmd.Flags().GetBool("interactive")
 			
 			var task models.Task
-			if err := db.Where("id::text LIKE ?", taskID+"%").First(&task).Error; err != nil {
-				log.Fatalf("Task not found: %v", err)
+			
+			if isInteractive {
+				// Interactive mode - select from TODO tasks
+				var todoTasks []models.Task
+				if err := db.Where("status = ?", "TODO").Find(&todoTasks).Error; err != nil {
+					log.Fatalf("Failed to fetch TODO tasks: %v", err)
+				}
+				
+				if len(todoTasks) == 0 {
+					fmt.Println("📋 No TODO tasks available to start")
+					return
+				}
+				
+				selectedTask, err := interactive.SelectTask(todoTasks, "Select task to start:")
+				if err != nil {
+					log.Fatalf("Task selection failed: %v", err)
+				}
+				task = *selectedTask
+			} else {
+				// Traditional CLI mode
+				if len(args) == 0 {
+					fmt.Println("❌ Task ID required (or use --interactive)")
+					return
+				}
+				taskID := args[0]
+				
+				if err := db.Where("id::text LIKE ?", taskID+"%").First(&task).Error; err != nil {
+					log.Fatalf("Task not found: %v", err)
+				}
 			}
 
 			task.Status = string(models.TaskStatusInProgress)
@@ -122,20 +176,52 @@ func newTaskStartCmd(db *gorm.DB) *cobra.Command {
 			fmt.Println("✅ Task status updated to IN_PROGRESS!")
 		},
 	}
+	
+	// Add interactive flag
+	cmd.Flags().BoolP("interactive", "i", false, "Use interactive mode for task selection")
+	
+	return cmd
 }
 
 // task done
 func newTaskDoneCmd(db *gorm.DB) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "done [id]",
 		Short: "Mark task as completed",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
-			taskID := args[0]
+			isInteractive, _ := cmd.Flags().GetBool("interactive")
 			
 			var task models.Task
-			if err := db.Where("id::text LIKE ?", taskID+"%").First(&task).Error; err != nil {
-				log.Fatalf("Task not found: %v", err)
+			
+			if isInteractive {
+				// Interactive mode - select from active tasks
+				var activeTasks []models.Task
+				if err := db.Where("status IN (?)", []string{"IN_PROGRESS", "IN_REVIEW"}).Find(&activeTasks).Error; err != nil {
+					log.Fatalf("Failed to fetch active tasks: %v", err)
+				}
+				
+				if len(activeTasks) == 0 {
+					fmt.Println("📋 No active tasks to complete")
+					return
+				}
+				
+				selectedTask, err := interactive.SelectTask(activeTasks, "Select task to complete:")
+				if err != nil {
+					log.Fatalf("Task selection failed: %v", err)
+				}
+				task = *selectedTask
+			} else {
+				// Traditional CLI mode
+				if len(args) == 0 {
+					fmt.Println("❌ Task ID required (or use --interactive)")
+					return
+				}
+				taskID := args[0]
+				
+				if err := db.Where("id::text LIKE ?", taskID+"%").First(&task).Error; err != nil {
+					log.Fatalf("Task not found: %v", err)
+				}
 			}
 
 			task.Status = string(models.TaskStatusCompleted)
@@ -148,6 +234,11 @@ func newTaskDoneCmd(db *gorm.DB) *cobra.Command {
 			fmt.Println("🎉 Great job!")
 		},
 	}
+	
+	// Add interactive flag
+	cmd.Flags().BoolP("interactive", "i", false, "Use interactive mode for task selection")
+	
+	return cmd
 }
 
 // task info
