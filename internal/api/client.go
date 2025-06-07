@@ -9,12 +9,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/terzigolu/josepshbrain-go/internal/config"
 	"github.com/terzigolu/josepshbrain-go/internal/models"
 )
 
 type Client struct {
 	BaseURL    string
 	HTTPClient *http.Client
+	APIKey     string
 }
 
 // NewClient creates a new API client
@@ -24,8 +26,16 @@ func NewClient() *Client {
 		baseURL = "http://localhost:8080"
 	}
 
+	// Load API key from config
+	cfg, err := config.LoadConfig()
+	apiKey := ""
+	if err == nil && cfg.APIKey != "" {
+		apiKey = cfg.APIKey
+	}
+
 	return &Client{
 		BaseURL: baseURL,
+		APIKey:  apiKey,
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -52,6 +62,11 @@ func (c *Client) makeRequest(method, endpoint string, body interface{}) ([]byte,
 
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// Add Authorization header if API key is available
+	if c.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.APIKey)
 	}
 
 	resp, err := c.HTTPClient.Do(req)
