@@ -131,16 +131,12 @@ func (c *Client) ListProjects() ([]models.Project, error) {
 		return nil, err
 	}
 
-	var response models.ProjectListResponse
-	if err := json.Unmarshal(respBody, &response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	var projects []models.Project
+	if err := json.Unmarshal(respBody, &projects); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal projects: %w", err)
 	}
 
-	if !response.Success {
-		return nil, fmt.Errorf("API error")
-	}
-
-	return response.Data, nil
+	return projects, nil
 }
 
 func (c *Client) GetProject(id string) (*models.Project, error) {
@@ -149,36 +145,31 @@ func (c *Client) GetProject(id string) (*models.Project, error) {
 		return nil, err
 	}
 
-	var response models.APIResponse
-	if err := json.Unmarshal(respBody, &response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	if !response.Success {
-		return nil, fmt.Errorf("API error: %s", response.Error)
-	}
-
-	projectData, err := json.Marshal(response.Data)
-	if err != nil {
-		return nil, err
-	}
-
 	var project models.Project
-	if err := json.Unmarshal(projectData, &project); err != nil {
-		return nil, err
+	if err := json.Unmarshal(respBody, &project); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal project: %w", err)
 	}
 
 	return &project, nil
 }
 
+func (c *Client) DeleteProject(id string) error {
+	_, err := c.makeRequest("DELETE", "/v1/projects/"+id, nil)
+	return err
+}
+
+func (c *Client) SetProjectActive(id string) error {
+	_, err := c.makeRequest("POST", "/v1/projects/"+id+"/use", nil)
+	return err
+}
+
 // Task API methods
-func (c *Client) CreateTask(projectID, title, description, priority string, tags []string) (*models.Task, error) {
+func (c *Client) CreateTask(projectID, title, description, priority string) (*models.Task, error) {
 	reqBody := map[string]interface{}{
 		"project_id":  projectID,
 		"title":       title,
 		"description": description,
 		"priority":    priority,
-		"tags":        tags,
 	}
 
 	respBody, err := c.makeRequest("POST", "/v1/tasks", reqBody)
@@ -232,12 +223,8 @@ func (c *Client) GetTask(id string) (*models.Task, error) {
 	return &task, nil
 }
 
-func (c *Client) UpdateTaskStatus(id, status string) (*models.Task, error) {
-	reqBody := map[string]string{
-		"status": status,
-	}
-
-	respBody, err := c.makeRequest("PUT", "/v1/tasks/"+id, reqBody)
+func (c *Client) UpdateTask(id string, data map[string]interface{}) (*models.Task, error) {
+	respBody, err := c.makeRequest("PUT", "/v1/tasks/"+id, data)
 	if err != nil {
 		return nil, err
 	}
@@ -256,11 +243,10 @@ func (c *Client) DeleteTask(id string) error {
 }
 
 // Memory API methods
-func (c *Client) CreateMemory(projectID, content string, tags []string) (*models.Memory, error) {
+func (c *Client) CreateMemory(projectID, content string) (*models.Memory, error) {
 	reqBody := map[string]interface{}{
 		"project_id": projectID,
 		"content":    content,
-		"tags":       tags,
 	}
 
 	respBody, err := c.makeRequest("POST", "/v1/memories", reqBody)
@@ -278,13 +264,18 @@ func (c *Client) CreateMemory(projectID, content string, tags []string) (*models
 
 func (c *Client) ListMemories(projectID, search string) ([]models.Memory, error) {
 	endpoint := "/v1/memories"
+	queryParams := ""
 	if projectID != "" {
-		endpoint += "?project_id=" + projectID
-		if search != "" {
-			endpoint += "&search=" + search
+		queryParams += "project_id=" + projectID
+	}
+	if search != "" {
+		if queryParams != "" {
+			queryParams += "&"
 		}
-	} else if search != "" {
-		endpoint += "?search=" + search
+		queryParams += "search=" + search
+	}
+	if queryParams != "" {
+		endpoint += "?" + queryParams
 	}
 
 	respBody, err := c.makeRequest("GET", endpoint, nil)
@@ -292,16 +283,64 @@ func (c *Client) ListMemories(projectID, search string) ([]models.Memory, error)
 		return nil, err
 	}
 
-	var response models.MemoryListResponse
-	if err := json.Unmarshal(respBody, &response); err != nil {
+	var memories []models.Memory
+	if err := json.Unmarshal(respBody, &memories); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	if !response.Success {
-		return nil, fmt.Errorf("API error")
-	}
+	return memories, nil
+}
 
-	return response.Data, nil
+func (c *Client) DeleteMemory(id string) error {
+	_, err := c.makeRequest("DELETE", "/v1/memories/"+id, nil)
+	return err
+}
+
+// Context API methods
+func (c *Client) CreateContext(name, description string) (*models.Context, error) {
+	reqBody := map[string]interface{}{
+		"name":        name,
+		"description": description,
+	}
+	respBody, err := c.makeRequest("POST", "/v1/contexts", reqBody)
+	if err != nil {
+		return nil, err
+	}
+	var context models.Context
+	if err := json.Unmarshal(respBody, &context); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal context: %w", err)
+	}
+	return &context, nil
+}
+
+func (c *Client) ListContexts() ([]models.Context, error) {
+	respBody, err := c.makeRequest("GET", "/v1/contexts", nil)
+	if err != nil {
+		return nil, err
+	}
+	var contexts []models.Context
+	if err := json.Unmarshal(respBody, &contexts); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal contexts: %w", err)
+	}
+	return contexts, nil
+}
+
+func (c *Client) DeleteContext(id string) error {
+	_, err := c.makeRequest("DELETE", "/v1/contexts/"+id, nil)
+	return err
+}
+
+func (c *Client) UseContext(name string) (*models.Context, error) {
+	reqBody := map[string]interface{}{"name": name}
+	respBody, err := c.makeRequest("POST", "/v1/contexts/use", reqBody)
+	if err != nil {
+		return nil, err
+	}
+	var context models.Context
+	if err := json.Unmarshal(respBody, &context); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal context: %w", err)
+	}
+	return &context, nil
 }
 
 // Annotation API methods

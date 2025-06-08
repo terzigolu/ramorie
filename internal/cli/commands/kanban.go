@@ -5,61 +5,57 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
-	"github.com/terzigolu/josepshbrain-go/config"
 	"github.com/terzigolu/josepshbrain-go/internal/api"
+	"github.com/terzigolu/josepshbrain-go/internal/config"
 	"github.com/terzigolu/josepshbrain-go/internal/models"
+	"github.com/urfave/cli/v2"
 )
 
-// NewKanbanCmd creates the kanban command, fully API-driven.
-func NewKanbanCmd() *cobra.Command {
-	var projectID string
-
-	cmd := &cobra.Command{
-		Use:   "kanban",
-		Short: "Display tasks in a kanban board view",
-		Long:  "Show a visual overview of tasks organized by status (TODO, IN_PROGRESS, COMPLETED).",
-		Run: func(cmd *cobra.Command, args []string) {
-			cfg, err := config.LoadCliConfig()
+// NewKanbanCmd creates the kanban command using urfave/cli.
+func NewKanbanCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "kanban",
+		Usage: "Display tasks in a kanban board view",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "project",
+				Aliases: []string{"p"},
+				Usage:   "Filter by project ID",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			projectID := c.String("project")
+			cfg, err := config.LoadConfig()
 			if err != nil {
 				fmt.Printf("Error loading config: %v\n", err)
 				os.Exit(1)
 			}
 
-			// Use active project if no specific project provided
 			if projectID == "" && cfg.ActiveProjectID != "" {
 				projectID = cfg.ActiveProjectID
 			}
 
 			client := api.NewClient()
-			
-			// Get tasks for each status
+
 			todoTasks, err := client.ListTasks(projectID, "TODO")
 			if err != nil {
-				fmt.Printf("Error fetching TODO tasks: %v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("error fetching TODO tasks: %w", err)
 			}
 
 			inProgressTasks, err := client.ListTasks(projectID, "IN_PROGRESS")
 			if err != nil {
-				fmt.Printf("Error fetching IN_PROGRESS tasks: %v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("error fetching IN_PROGRESS tasks: %w", err)
 			}
 
 			completedTasks, err := client.ListTasks(projectID, "COMPLETED")
 			if err != nil {
-				fmt.Printf("Error fetching COMPLETED tasks: %v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("error fetching COMPLETED tasks: %w", err)
 			}
 
-			// Display kanban board
 			displayKanbanBoard(todoTasks, inProgressTasks, completedTasks)
+			return nil
 		},
 	}
-
-	cmd.Flags().StringVarP(&projectID, "project", "p", "", "Filter by project ID")
-
-	return cmd
 }
 
 func displayKanbanBoard(todoTasks, inProgressTasks, completedTasks []models.Task) {
@@ -67,20 +63,16 @@ func displayKanbanBoard(todoTasks, inProgressTasks, completedTasks []models.Task
 	fmt.Println("=" + strings.Repeat("=", 80))
 	fmt.Println()
 
-	// Calculate column width
 	colWidth := 25
 
-	// Headers
 	fmt.Printf("%-*s | %-*s | %-*s\n", colWidth, "📝 TODO", colWidth, "🚀 IN PROGRESS", colWidth, "✅ COMPLETED")
-	fmt.Printf("%s-+-%s-+-%s\n", 
-		strings.Repeat("-", colWidth), 
-		strings.Repeat("-", colWidth), 
+	fmt.Printf("%s-+-%s-+-%s\n",
+		strings.Repeat("-", colWidth),
+		strings.Repeat("-", colWidth),
 		strings.Repeat("-", colWidth))
 
-	// Find max rows needed
 	maxRows := max(len(todoTasks), len(inProgressTasks), len(completedTasks))
 
-	// Display tasks row by row
 	for i := 0; i < maxRows; i++ {
 		todoCell := ""
 		inProgressCell := ""
@@ -89,27 +81,27 @@ func displayKanbanBoard(todoTasks, inProgressTasks, completedTasks []models.Task
 		if i < len(todoTasks) {
 			task := todoTasks[i]
 			priority := getPriorityIcon(task.Priority)
-			todoCell = fmt.Sprintf("%s %s %s", 
-				priority, 
-				task.ID.String()[:8], 
+			todoCell = fmt.Sprintf("%s %s %s",
+				priority,
+				task.ID.String()[:8],
 				truncateString(task.Title, colWidth-12))
 		}
 
 		if i < len(inProgressTasks) {
 			task := inProgressTasks[i]
 			priority := getPriorityIcon(task.Priority)
-			inProgressCell = fmt.Sprintf("%s %s %s", 
-				priority, 
-				task.ID.String()[:8], 
+			inProgressCell = fmt.Sprintf("%s %s %s",
+				priority,
+				task.ID.String()[:8],
 				truncateString(task.Title, colWidth-12))
 		}
 
 		if i < len(completedTasks) {
 			task := completedTasks[i]
 			priority := getPriorityIcon(task.Priority)
-			completedCell = fmt.Sprintf("%s %s %s", 
-				priority, 
-				task.ID.String()[:8], 
+			completedCell = fmt.Sprintf("%s %s %s",
+				priority,
+				task.ID.String()[:8],
 				truncateString(task.Title, colWidth-12))
 		}
 
@@ -117,10 +109,9 @@ func displayKanbanBoard(todoTasks, inProgressTasks, completedTasks []models.Task
 	}
 
 	fmt.Println()
-	fmt.Printf("Summary: %d TODO, %d IN PROGRESS, %d COMPLETED\n", 
+	fmt.Printf("Summary: %d TODO, %d IN PROGRESS, %d COMPLETED\n",
 		len(todoTasks), len(inProgressTasks), len(completedTasks))
-	
-	// Show priority legend
+
 	fmt.Println()
 	fmt.Println("Priority: 🔴 High | 🟡 Medium | 🟢 Low")
 }

@@ -7,7 +7,8 @@ import (
 )
 
 type Config struct {
-	APIKey string `json:"api_key"`
+	APIKey          string `json:"api_key"`
+	ActiveProjectID string `json:"active_project_id"`
 }
 
 func GetConfigPath() (string, error) {

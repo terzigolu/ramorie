@@ -6,57 +6,59 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/spf13/cobra"
 	"github.com/terzigolu/josepshbrain-go/internal/api"
+	"github.com/urfave/cli/v2"
 )
 
-// NewAnnotateCmd creates the annotate command, fully API-driven.
-func NewAnnotateCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "annotate [task-id] [content]",
-		Short: "Add an annotation to a task",
-		Long:  "Add progress notes, decisions, or technical details to a task.",
-		Args:  cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			taskID := args[0]
-			content := args[1]
+// NewAnnotateCmd creates the 'annotate' command using urfave/cli.
+func NewAnnotateCmd() *cli.Command {
+	return &cli.Command{
+		Name:      "annotate",
+		Usage:     "Add an annotation to a task",
+		ArgsUsage: "[task-id] [content]",
+		Action: func(c *cli.Context) error {
+			if c.NArg() != 2 {
+				return fmt.Errorf("task ID and content are required")
+			}
+			taskID := c.Args().Get(0)
+			content := c.Args().Get(1)
 
 			client := api.NewClient()
 			annotation, err := client.CreateAnnotation(taskID, content)
 			if err != nil {
-				fmt.Printf("Error creating annotation: %v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("error creating annotation: %w", err)
 			}
 
 			fmt.Printf("📝 Annotation added successfully!\n")
 			fmt.Printf("Task ID: %s\n", annotation.TaskID.String())
 			fmt.Printf("Content: %s\n", annotation.Content)
 			fmt.Printf("Created: %s\n", annotation.CreatedAt.Format("2006-01-02 15:04:05"))
+			return nil
 		},
 	}
-
-	return cmd
 }
 
-// NewTaskAnnotationsCmd creates the task-annotations command
-func NewTaskAnnotationsCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "task-annotations [task-id]",
-		Short: "List all annotations for a task",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			taskID := args[0]
+// NewTaskAnnotationsCmd creates the 'task-annotations' command using urfave/cli.
+func NewTaskAnnotationsCmd() *cli.Command {
+	return &cli.Command{
+		Name:      "task-annotations",
+		Usage:     "List all annotations for a task",
+		ArgsUsage: "[task-id]",
+		Action: func(c *cli.Context) error {
+			if c.NArg() != 1 {
+				return fmt.Errorf("task ID is required")
+			}
+			taskID := c.Args().First()
 
 			client := api.NewClient()
 			annotations, err := client.ListAnnotations(taskID)
 			if err != nil {
-				fmt.Printf("Error listing annotations: %v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("error listing annotations: %w", err)
 			}
 
 			if len(annotations) == 0 {
 				fmt.Printf("No annotations found for task %s\n", taskID)
-				return
+				return nil
 			}
 
 			fmt.Printf("📝 Annotations for task %s:\n\n", taskID[:8])
@@ -75,13 +77,11 @@ func NewTaskAnnotationsCmd() *cobra.Command {
 			}
 			w.Flush()
 
-			// Show full content for each annotation
 			fmt.Printf("\n📋 Full annotations:\n")
 			for i, annotation := range annotations {
 				fmt.Printf("\n%d. [%s] %s\n", i+1, annotation.CreatedAt.Format("2006-01-02 15:04"), annotation.Content)
 			}
+			return nil
 		},
 	}
-
-	return cmd
 }

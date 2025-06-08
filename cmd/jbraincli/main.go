@@ -17,6 +17,11 @@ func main() {
 			commands.NewTaskCommand(),
 			commands.NewProjectCommand(),
 			commands.NewMemoryCommand(),
+			commands.NewKanbanCmd(),
+			commands.NewAnnotateCmd(),
+			commands.NewTaskAnnotationsCmd(),
+			commands.NewContextCommand(),
+			commands.NewConfigCommand(),
 		},
 	}
 
