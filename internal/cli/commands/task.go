@@ -169,6 +169,14 @@ func taskShowCmd() *cli.Command {
 			fmt.Printf("Project ID:  %s\n", task.ProjectID.String())
 			fmt.Printf("Created At:  %s\n", task.CreatedAt.Format("2006-01-02 15:04:05"))
 			fmt.Printf("Updated At:  %s\n", task.UpdatedAt.Format("2006-01-02 15:04:05"))
+
+			if len(task.Annotations) > 0 {
+				fmt.Println(strings.Repeat("-", 40))
+				fmt.Println("Annotations:")
+				for _, an := range task.Annotations {
+					fmt.Printf("  - [%s] %s\n", an.CreatedAt.Format("2006-01-02 15:04"), an.Content)
+				}
+			}
 			return nil
 		},
 	}
