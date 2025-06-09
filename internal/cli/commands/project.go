@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -22,6 +24,7 @@ func NewProjectCommand() *cli.Command {
 			projectShowCmd(),
 			projectUseCmd(),
 			projectDeleteCmd(),
+			projectUpdateCmd(),
 		},
 	}
 }
@@ -124,6 +127,14 @@ func projectShowCmd() *cli.Command {
 			fmt.Printf("ID:          %s\n", project.ID.String())
 			fmt.Printf("Name:        %s\n", project.Name)
 			fmt.Printf("Description: %s\n", project.Description)
+			if project.Configuration != nil && len(project.Configuration) > 0 {
+				var prettyJSON bytes.Buffer
+				if err := json.Indent(&prettyJSON, project.Configuration, "", "  "); err == nil {
+					fmt.Printf("Configuration: \n%s\n", prettyJSON.String())
+				} else {
+					fmt.Printf("Configuration: %s\n", string(project.Configuration))
+				}
+			}
 			fmt.Printf("Created At:  %s\n", project.CreatedAt.Format("2006-01-02 15:04:05"))
 			fmt.Printf("Updated At:  %s\n", project.UpdatedAt.Format("2006-01-02 15:04:05"))
 			return nil
@@ -209,6 +220,84 @@ func projectDeleteCmd() *cli.Command {
 			}
 
 			fmt.Printf("🗑️ Project %s deleted successfully.\n", projectID)
+			return nil
+		},
+	}
+}
+
+// projectUpdateCmd updates a project.
+func projectUpdateCmd() *cli.Command {
+	return &cli.Command{
+		Name:      "update",
+		Usage:     "Update a project's properties",
+		ArgsUsage: "[project-id]",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "name",
+				Aliases: []string{"n"},
+				Usage:   "New project name",
+			},
+			&cli.StringFlag{
+				Name:    "description",
+				Aliases: []string{"d"},
+				Usage:   "New project description",
+			},
+			&cli.StringFlag{
+				Name:  "config-json-string",
+				Usage: "Project configuration as a JSON string",
+			},
+			&cli.PathFlag{
+				Name:  "config-json-file",
+				Usage: "Path to a file containing project configuration as JSON",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			if c.NArg() == 0 {
+				return fmt.Errorf("project ID is required")
+			}
+			projectID := c.Args().First()
+
+			updateData := make(map[string]interface{})
+
+			if name := c.String("name"); name != "" {
+				updateData["name"] = name
+			}
+			if description := c.String("description"); description != "" {
+				updateData["description"] = description
+			}
+
+			configJSON := c.String("config-json-string")
+			configFilePath := c.Path("config-json-file")
+
+			if configJSON != "" && configFilePath != "" {
+				return fmt.Errorf("please provide configuration using either --config-json-string or --config-json-file, not both")
+			}
+
+			if configFilePath != "" {
+				fileBytes, err := os.ReadFile(configFilePath)
+				if err != nil {
+					return fmt.Errorf("failed to read config file: %w", err)
+				}
+				configJSON = string(fileBytes)
+			}
+
+			if configJSON != "" {
+				updateData["configuration"] = json.RawMessage(configJSON)
+			}
+
+			if len(updateData) == 0 {
+				fmt.Println("No update fields provided.")
+				return nil
+			}
+
+			client := api.NewClient()
+			project, err := client.UpdateProject(projectID, updateData)
+			if err != nil {
+				fmt.Printf("Error updating project: %v\n", err)
+				return err
+			}
+
+			fmt.Printf("✅ Project '%s' (ID: %s) updated successfully.\n", project.Name, project.ID.String()[:8])
 			return nil
 		},
 	}

@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -96,7 +97,7 @@ func taskCreateCmd() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "project", Aliases: []string{"p"}, Usage: "Project ID. Defaults to active project."},
 			&cli.StringFlag{Name: "description", Aliases: []string{"d"}, Usage: "Task description"},
-			&cli.StringFlag{Name: "priority", Usage: "Priority (H, M, L)", Value: "M"},
+			&cli.StringFlag{Name: "priority", Aliases: []string{"P"}, Usage: "Priority (H, M, L)", Value: "M"},
 		},
 		Action: func(c *cli.Context) error {
 			if c.NArg() == 0 {
@@ -190,33 +191,72 @@ func taskUpdateCmd() *cli.Command {
 		Usage:     "Update a task's properties",
 		ArgsUsage: "[task-id]",
 		Flags: []cli.Flag{
-			&cli.StringFlag{Name: "title", Aliases: []string{"t"}, Usage: "New title"},
-			&cli.StringFlag{Name: "description", Aliases: []string{"d"}, Usage: "New description"},
-			&cli.StringFlag{Name: "status", Aliases: []string{"s"}, Usage: "New status (TODO, IN_PROGRESS, COMPLETED)"},
-			&cli.StringFlag{Name: "priority", Aliases: []string{"p"}, Usage: "New priority (H, M, L)"},
-			&cli.IntFlag{Name: "progress", Usage: "New progress percentage (0-100)", Value: -1},
+			&cli.StringFlag{
+				Name:    "title",
+				Aliases: []string{"t"},
+				Usage:   "New title",
+			},
+			&cli.StringFlag{
+				Name:    "description",
+				Aliases: []string{"d"},
+				Usage:   "New description",
+			},
+			&cli.StringFlag{
+				Name:    "status",
+				Aliases: []string{"s"},
+				Usage:   "New status (TODO, IN_PROGRESS, COMPLETED)",
+			},
+			&cli.StringFlag{
+				Name:    "priority",
+				Aliases: []string{"P"},
+				Usage:   "New priority (H, M, L)",
+			},
+			&cli.IntFlag{
+				Name:  "progress",
+				Usage: "New progress percentage (0-100)",
+				Value: -1,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			if c.NArg() == 0 {
 				return fmt.Errorf("task ID is required")
 			}
-			taskID := c.Args().First()
-
+			
+			args := c.Args().Slice()
+			taskID := args[0]
+			
 			updateData := map[string]interface{}{}
-			if c.IsSet("title") {
-				updateData["title"] = c.String("title")
-			}
-			if c.IsSet("description") {
-				updateData["description"] = c.String("description")
-			}
-			if c.IsSet("status") {
-				updateData["status"] = c.String("status")
-			}
-			if c.IsSet("priority") {
-				updateData["priority"] = c.String("priority")
-			}
-			if c.Int("progress") >= 0 {
-				updateData["progress"] = c.Int("progress")
+			
+			// Manual flag parsing since urfave/cli seems to have issues
+			for i := 1; i < len(args); i++ {
+				if args[i] == "--title" || args[i] == "-t" {
+					if i+1 < len(args) {
+						updateData["title"] = args[i+1]
+						i++ // Skip next argument as it's the value
+					}
+				} else if args[i] == "--description" || args[i] == "-d" {
+					if i+1 < len(args) {
+						updateData["description"] = args[i+1]
+						i++
+					}
+				} else if args[i] == "--status" || args[i] == "-s" {
+					if i+1 < len(args) {
+						updateData["status"] = args[i+1]
+						i++
+					}
+				} else if args[i] == "--priority" || args[i] == "-P" {
+					if i+1 < len(args) {
+						updateData["priority"] = args[i+1]
+						i++
+					}
+				} else if args[i] == "--progress" {
+					if i+1 < len(args) {
+						if progress, err := strconv.Atoi(args[i+1]); err == nil && progress >= 0 && progress <= 100 {
+							updateData["progress"] = progress
+						}
+						i++
+					}
+				}
 			}
 
 			if len(updateData) == 0 {

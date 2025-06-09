@@ -2,7 +2,7 @@
 
 # Build the CLI binary
 build:
-	go build -o jbraincli cmd/jbraincli/main.go
+	go build -o jbraincli .
 
 # Install the CLI globally
 install: build

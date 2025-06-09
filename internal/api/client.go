@@ -149,6 +149,20 @@ func (c *Client) SetProjectActive(id string) error {
 	return err
 }
 
+func (c *Client) UpdateProject(id string, data map[string]interface{}) (*models.Project, error) {
+	respBody, err := c.makeRequest("PUT", "/projects/"+id, data)
+	if err != nil {
+		return nil, err
+	}
+
+	var project models.Project
+	if err := json.Unmarshal(respBody, &project); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal project from update response: %w", err)
+	}
+
+	return &project, nil
+}
+
 // Task API methods
 func (c *Client) CreateTask(projectID, title, description, priority string) (*models.Task, error) {
 	reqBody := map[string]interface{}{
