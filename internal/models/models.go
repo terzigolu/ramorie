@@ -43,6 +43,13 @@ type Memory struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type Tag struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // Annotation represents a task annotation
 type Annotation struct {
 	ID        uuid.UUID `json:"id"`

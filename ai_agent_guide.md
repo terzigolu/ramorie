@@ -46,7 +46,24 @@ Kodlama, komut çalıştırma gibi aktif geliştirme adımları sırasında:
     ```bash
     jbraincli task start <görev-id>
     ```
-2.  **İlerlemeyi Not Al (Annotate):** Yaptığın her anlamlı işlemi (bir komut çalıştırmak, bir dosyayı düzenlemek, bir hata almak vb.) göreve not olarak ekle. Bu, hem ilerlemenin bir kaydını tutar hem de kullanıcıya ne yapıldığını şeffaf bir şekilde gösterir.
+2.  **Görev Detaylarını Güncelle:** Çalışma sırasında görevin başlığını, açıklamasını, durumunu veya önceliğini değiştirmen gerekirse `update` komutunu kullan:
+    ```bash
+    # Başlığı güncelle
+    jbraincli task update <görev-id> --title "Yeni Başlık"
+    
+    # Durumu güncelle
+    jbraincli task update <görev-id> --status IN_PROGRESS
+    
+    # Önceliği güncelle
+    jbraincli task update <görev-id> --priority H
+    
+    # Birden fazla özelliği aynı anda güncelle
+    jbraincli task update <görev-id> --title "Güncellenmiş Babout:blank#blockedaşlık" --status IN_PROGRESS --priority H
+    
+    # Kısa flag isimleri de kullanılabilir
+    jbraincli task update <görev-id> -t "Yeni Başlık" -s COMPLETED -P M
+    ```
+3.  **İlerlemeyi Not Al (Annotate):** Yaptığın her anlamlı işlemi (bir komut çalıştırmak, bir dosyayı düzenlemek, bir hata almak vb.) göreve not olarak ekle. Bu, hem ilerlemenin bir kaydını tutar hem de kullanıcıya ne yapıldığını şeffaf bir şekilde gösterir.
     ```bash
     jbraincli annotate <görev-id> "Makefile düzenlendi ve 'build' komutu eklendi."
     jbraincli annotate <görev-id> "Derleme sırasında 'redeclared function' hatası alındı. Çözülüyor."
@@ -74,4 +91,43 @@ Görevin tüm gereksinimleri karşılandığında ve iş bittiğinde:
     jbraincli memory recall "uygulama kurulumu"
     ```
 
-Bu rehberi takip ederek, bir AI ajanı `jbraincli`'ı verimli ve insan-gözetimli bir şekilde kullanabilir. 
+## Komut Referansı
+
+### Task Yönetimi
+
+| Komut | Açıklama | Örnek |
+|-------|----------|-------|
+| `task create` | Yeni görev oluştur | `jbraincli task create "Bug fix" --description "Login hatası"` |
+| `task list` | Görevleri listele | `jbraincli task list --status TODO` |
+| `task show` | Görev detayını göster | `jbraincli task show a6ba6295` |
+| `task update` | Görev özelliklerini güncelle | `jbraincli task update <id> --title "Yeni başlık" -s COMPLETED` |
+| `task start` | Görevi IN_PROGRESS yap | `jbraincli task start a6ba6295` |
+| `task complete` | Görevi COMPLETED yap | `jbraincli task complete a6ba6295` |
+| `task elaborate` | AI ile görev planı oluştur | `jbraincli task elaborate a6ba6295` |
+| `annotate` | Göreve not ekle (tam UUID gerekli) | `jbraincli annotate <tam-uuid> "İlerleme notu"` |
+
+### Task Update Flag'leri
+
+| Flag | Kısa Hali | Açıklama | Değerler |
+|------|-----------|----------|----------|
+| `--title` | `-t` | Görev başlığını güncelle | Herhangi bir string |
+| `--description` | `-d` | Görev açıklamasını güncelle | Herhangi bir string |
+| `--status` | `-s` | Görev durumunu güncelle | `TODO`, `IN_PROGRESS`, `COMPLETED` |
+| `--priority` | `-P` | Görev önceliğini güncelle | `H` (High), `M` (Medium), `L` (Low) |
+| `--progress` | - | İlerleme yüzdesini güncelle | 0-100 arası sayı |
+
+### Memory Yönetimi
+
+| Komut | Açıklama | Örnek |
+|-------|----------|-------|
+| `memory remember` | Bilgi sakla | `jbraincli memory remember "Deploy komutu: make deploy"` |
+| `memory recall` | Bilgi ara | `jbraincli memory recall "deploy"` |
+
+### Project Yönetimi
+
+| Komut | Açıklama | Örnek |
+|-------|----------|-------|
+| `project list` | Projeleri listele | `jbraincli project list` |
+| `project use` | Aktif projeyi değiştir | `jbraincli project use <project-id>` |
+
+Bu rehberi takip ederek, bir AI ajanı `jbraincli`'ı verimli ve insan-gözetimli bir şekilde kullanabilir.

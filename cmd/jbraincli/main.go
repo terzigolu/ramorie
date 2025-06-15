@@ -23,6 +23,7 @@ func main() {
 			commands.NewTaskAnnotationsCmd(),
 			commands.NewContextCommand(),
 			commands.NewConfigCommand(),
+			commands.NewGeminiKeyCommand(),
 		},
 	}
 
