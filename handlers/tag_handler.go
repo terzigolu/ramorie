@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"josepshbrain-go/internal/models"
-	"josepshbrain-go/repository"
+	"github.com/terzigolu/josepshbrain-go/internal/models"
+	"github.com/terzigolu/josepshbrain-go/repository"
 
 	"github.com/google/uuid"
 )
