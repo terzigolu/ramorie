@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/terzigolu/josepshbrain-go/internal/models"
+	"josepshbrain-go/internal/models"
 )
 
 // --- Notes Endpoints ---

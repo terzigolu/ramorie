@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"josepshbrain-go/handlers"
+	"josepshbrain-go/repository"
 	"strings"
-
-	"github.com/terzigolu/josepshbrain-go/handlers"
-	"github.com/terzigolu/josepshbrain-go/repository"
 
 	_ "github.com/lib/pq"
 )
