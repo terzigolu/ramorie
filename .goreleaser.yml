@@ -1,5 +1,5 @@
 # GoReleaser configuration
-version: 1
+project_name: jbraincli
 
 before:
   hooks:
@@ -7,7 +7,10 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - id: jbraincli
+    binary: jbraincli
+    main: ./cmd/jbraincli
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -16,14 +19,17 @@ builds:
     goarch:
       - amd64
       - arm64
-    main: ./cmd/jbraincli/main.go
-    binary: jbraincli
+    ignore:
+      - goos: windows
+        goarch: arm64
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+      - -s -w
+      - -X main.Version={{.Version}}
 
 archives:
-  - format: tar.gz
-    # this name template makes the OS and Arch compatible with the results of uname.
+  - id: default
+    builds:
+      - jbraincli
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -31,10 +37,9 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
     format_overrides:
-    - goos: windows
-      format: zip
+      - goos: windows
+        format: zip
 
 checksum:
   name_template: 'checksums.txt'
@@ -51,14 +56,23 @@ changelog:
 
 # Release configuration
 release:
+  github:
+    owner: terzigolu
+    name: josepshbrain-go
   draft: false
   prerelease: auto
-  name_template: "Release {{.Tag}}"
-  header: |
-    ## JosephsBrain CLI {{.Tag}}
-    
-    Welcome to this new release!
-  footer: |
-    ## Thanks!
-    
-    Those were the changes on {{.Tag}}!
+  name_template: "{{ .ProjectName }} v{{ .Version }}"
+
+brews:
+  - name: jbraincli
+    repository:
+      owner: terzigolu
+      name: homebrew-tools
+      branch: main
+    homepage: "https://github.com/terzigolu/josepshbrain-go"
+    description: "A CLI for interacting with the JosephsBrain API"
+    license: "MIT"
+    install: |
+      bin.install "jbraincli"
+    test: |
+      system "#{bin}/jbraincli", "--version"

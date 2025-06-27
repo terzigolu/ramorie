@@ -8,10 +8,14 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// Version will be set during build with ldflags
+var Version = "dev"
+
 func main() {
 	app := &cli.App{
-		Name:  "jbraincli",
-		Usage: "A CLI for interacting with the JosephsBrain API",
+		Name:    "jbraincli",
+		Usage:   "A CLI for interacting with the JosephsBrain API",
+		Version: Version,
 		Commands: []*cli.Command{
 			commands.NewSetupCommand(),
 			commands.NewTaskCommand(),

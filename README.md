@@ -1,93 +1,85 @@
-# JosephsBrain Go CLI - AI Agent Guide
+# JosephsBrain CLI
 
-**A powerful command-line productivity tool for task management, project organization, and memory storage with PostgreSQL persistence.**
+A powerful command-line interface for managing tasks, projects, and memories with JosephsBrain.
 
-## 📦 Installation
+## 🚀 Installation
 
-### Option 1: One-Command Install (Recommended)
-
-**Prerequisites:** Install [GitHub CLI](https://cli.github.com) first.
-
-**Copy and paste this command:**
+### Option 1: Using go install (Requires Go 1.24+)
 ```bash
-cd /tmp && ARCH=$(uname -m) && gh release download --repo terzigolu/josepshbrain-go --pattern "*$(uname -s)_${ARCH}.tar.gz" --clobber && tar -xzf josepshbrain-go_$(uname -s)_${ARCH}.tar.gz && sudo mv jbraincli /usr/local/bin/ && rm josepshbrain-go_*.tar.gz && echo "✅ jbraincli installed successfully!" && jbraincli --help
+go install github.com/terzigolu/josepshbrain-go/cmd/jbraincli@latest
 ```
 
-This single command will:
-- Download the correct binary for your platform (macOS/Linux)
-- Extract the `jbraincli` binary
-- Install it to `/usr/local/bin/`
-- Clean up temporary files
-- Verify the installation
+### Option 2: Download Pre-built Binaries
 
-### Option 2: Homebrew (Currently Unavailable)
-
-> **Note:** Homebrew installation is currently unavailable because the repository is private. Homebrew requires public repositories to download release assets. We're working on making this available in the future.
-
-### Option 2: Direct Binary Download
-
-For users who prefer not to use the GitHub CLI, you can manually download the appropriate binary:
-
-1. **Visit the releases page:** [github.com/terzigolu/josepshbrain-go/releases](https://github.com/terzigolu/josepshbrain-go/releases)
-
-2. **Download the correct file for your platform:**
-   - macOS (Apple Silicon): `josepshbrain-go_Darwin_arm64.tar.gz`
-   - macOS (Intel): `josepshbrain-go_Darwin_x86_64.tar.gz`
-   - Linux (64-bit): `josepshbrain-go_Linux_x86_64.tar.gz`
-   - Windows (64-bit): `josepshbrain-go_Windows_x86_64.zip`
-
-3. **Extract and install:**
-   ```bash
-   # For macOS/Linux
-   tar -xzf josepshbrain-go_*.tar.gz
-   sudo mv jbraincli /usr/local/bin/
-   
-   # For Windows
-   # Extract the .zip file and move jbraincli.exe to a directory in your PATH
-   ```
-
-### Option 3: Build from Source
+#### macOS
 ```bash
-# Clone and build
+# For Intel Macs
+curl -L -o jbraincli https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-darwin-amd64
+chmod +x jbraincli
+sudo mv jbraincli /usr/local/bin/
+
+# For Apple Silicon Macs (M1/M2)
+curl -L -o jbraincli https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-darwin-arm64
+chmod +x jbraincli
+sudo mv jbraincli /usr/local/bin/
+```
+
+#### Linux
+```bash
+# For AMD64
+curl -L -o jbraincli https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-linux-amd64
+chmod +x jbraincli
+sudo mv jbraincli /usr/local/bin/
+
+# For ARM64
+curl -L -o jbraincli https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-linux-arm64
+chmod +x jbraincli
+sudo mv jbraincli /usr/local/bin/
+```
+
+#### Windows
+1. Download the appropriate binary:
+   - [AMD64](https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-windows-amd64.exe)
+   - [ARM64](https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-windows-arm64.exe)
+2. Rename to `jbraincli.exe` and add to your PATH
+
+### Option 3: One-line Installation Script
+
+#### macOS/Linux
+```bash
+curl -sSL https://raw.githubusercontent.com/terzigolu/josepshbrain-go/main/install.sh | bash
+```
+
+#### Windows (PowerShell)
+```powershell
+iwr -useb https://raw.githubusercontent.com/terzigolu/josepshbrain-go/main/install.ps1 | iex
+```
+
+## 🏁 Quick Start
+
+After installation, run:
+```bash
+jbraincli setup register
+```
+
+## 📚 Usage
+
+See the full documentation in our [user guide](jbraincli_quick_reference_updated.md).
+
+Quick commands:
+- `jbraincli task create "My new task"` - Create a task
+- `jbraincli task list` - List all tasks
+- `jbraincli project create "My Project"` - Create a project
+- `jbraincli kanban` - View tasks in kanban board
+- `jbraincli remember "Important information"` - Store a memory
+
+## 🔧 Development
+
+To build from source:
+```bash
 git clone https://github.com/terzigolu/josepshbrain-go.git
 cd josepshbrain-go
-make install
-
-# Setup your account
-jbraincli setup register
-```
-
-## 🚀 Quick Start
-
-```bash
-# After installation, register a new account
-jbraincli setup register
-
-# Or login with existing account
-jbraincli setup login
-
-# Check installation
-jbraincli --help
-
-# Set up a project
-jbraincli project init "my-project"
-jbraincli project use my-project
-
-# Create tasks
-jbraincli task create "Implement new feature"
-jbraincli task create "Fix bug #123"
-
-# Store insights and learnings
-jbraincli remember "Fixed the database connection issue with connection pooling"
-
-# Add notes to tasks
-jbraincli annotate <task-id> "Implementation details and notes"
-
-# View task details
-jbraincli task info <task-id>
-
-# View kanban board
-jbraincli kanban
+go build -o jbraincli ./cmd/jbraincli
 ```
 
 ## 📋 Core Features
