@@ -13,9 +13,8 @@ var Version = "dev"
 
 func main() {
 	app := &cli.App{
-		Name:    "jbraincli",
-		Usage:   "A CLI for interacting with the JosephsBrain API",
-		Version: Version,
+		Name:  "jbraincli",
+		Usage: "A CLI for interacting with the JosephsBrain API",
 		Commands: []*cli.Command{
 			commands.NewSetupCommand(),
 			commands.NewTaskCommand(),
