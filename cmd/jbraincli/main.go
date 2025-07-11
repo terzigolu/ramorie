@@ -28,6 +28,7 @@ func main() {
 			commands.NewContextCommand(),
 			commands.NewConfigCommand(),
 			commands.NewGeminiKeyCommand(),
+			commands.NewAnalyzeCommand(),
 		},
 	}
 
