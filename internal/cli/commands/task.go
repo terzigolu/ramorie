@@ -125,7 +125,7 @@ func taskCreateCmd() *cli.Command {
 			}
 
 			if projectID == "" {
-				return fmt.Errorf("no active project set. Use 'jbraincli project use <id>' or specify --project")
+				return fmt.Errorf("no active project set. Use 'jbrain project use <id>' or specify --project")
 			}
 
 			task, err := client.CreateTask(projectID, title, description, priority)
@@ -221,12 +221,12 @@ func taskUpdateCmd() *cli.Command {
 			if c.NArg() == 0 {
 				return fmt.Errorf("task ID is required")
 			}
-			
+
 			args := c.Args().Slice()
 			taskID := args[0]
-			
+
 			updateData := map[string]interface{}{}
-			
+
 			// Manual flag parsing since urfave/cli seems to have issues
 			for i := 1; i < len(args); i++ {
 				if args[i] == "--title" || args[i] == "-t" {
@@ -374,9 +374,8 @@ func taskElaborateCmd() *cli.Command {
 			}
 
 			fmt.Printf("✅ Successfully elaborated on task %s and saved it as a new note.\n", taskID)
-			fmt.Printf("Use 'jbraincli task show %s' to see the results.\n", taskID)
+			fmt.Printf("Use 'jbrain task show %s' to see the results.\n", taskID)
 			return nil
 		},
 	}
 }
-

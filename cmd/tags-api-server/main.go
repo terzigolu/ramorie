@@ -93,6 +93,15 @@ func main() {
 		http.NotFound(w, r)
 	})
 
+	// Add bulk update endpoint
+	http.HandleFunc("/tasks/bulk-update", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		handlers.BulkUpdateTasks(w, r)
+	})
+
 	log.Println("Tags API server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

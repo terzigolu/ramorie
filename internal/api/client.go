@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/terzigolu/josepshbrain-go/internal/config"
@@ -22,6 +23,10 @@ type Client struct {
 	BaseURL    string
 	HTTPClient *http.Client
 	APIKey     string
+}
+
+func (c *Client) Request(method, endpoint string, body interface{}) ([]byte, error) {
+	return c.makeRequest(method, endpoint, body)
 }
 
 // NewClient creates a new API client
@@ -210,6 +215,47 @@ func (c *Client) ListTasks(projectID, status string) ([]models.Task, error) {
 	return tasks, nil
 }
 
+func (c *Client) ListTasksQuery(projectID string, status string, q string, priorities []string, tags []string) ([]models.Task, error) {
+	endpoint := "/tasks"
+	params := url.Values{}
+	if strings.TrimSpace(projectID) != "" {
+		params.Add("project_id", strings.TrimSpace(projectID))
+	}
+	if strings.TrimSpace(status) != "" {
+		params.Add("status", strings.TrimSpace(status))
+	}
+	if strings.TrimSpace(q) != "" {
+		params.Add("q", strings.TrimSpace(q))
+	}
+	for _, p := range priorities {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			params.Add("priorities", p)
+		}
+	}
+	for _, t := range tags {
+		t = strings.TrimSpace(t)
+		if t != "" {
+			params.Add("tags", t)
+		}
+	}
+	if encoded := params.Encode(); encoded != "" {
+		endpoint += "?" + encoded
+	}
+
+	respBody, err := c.makeRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []models.Task
+	if err := json.Unmarshal(respBody, &tasks); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return tasks, nil
+}
+
 func (c *Client) GetTask(id string) (*models.Task, error) {
 	respBody, err := c.makeRequest("GET", "/tasks/"+id, nil)
 	if err != nil {
@@ -243,6 +289,16 @@ func (c *Client) DeleteTask(id string) error {
 	return err
 }
 
+func (c *Client) StartTask(taskID string) error {
+	_, err := c.makeRequest("POST", "/tasks/"+taskID+"/start", nil)
+	return err
+}
+
+func (c *Client) CompleteTask(taskID string) error {
+	_, err := c.makeRequest("POST", "/tasks/"+taskID+"/done", nil)
+	return err
+}
+
 func (c *Client) ElaborateTask(taskID string) (*models.Annotation, error) {
 	endpoint := fmt.Sprintf("/tasks/%s/elaborate", taskID)
 	respBody, err := c.makeRequest("POST", endpoint, nil)
@@ -256,6 +312,82 @@ func (c *Client) ElaborateTask(taskID string) (*models.Annotation, error) {
 	}
 
 	return &annotation, nil
+}
+
+func (c *Client) AINextStep(taskID string) (map[string]interface{}, error) {
+	endpoint := fmt.Sprintf("/tasks/%s/ai/next-step", taskID)
+	respBody, err := c.makeRequest("POST", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Data map[string]interface{} `json:"data"`
+	}
+	if err := json.Unmarshal(respBody, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal ai next-step response: %w", err)
+	}
+	if resp.Data == nil {
+		resp.Data = map[string]interface{}{}
+	}
+	return resp.Data, nil
+}
+
+func (c *Client) AIEstimateTime(taskID string) (map[string]interface{}, error) {
+	endpoint := fmt.Sprintf("/tasks/%s/ai/estimate-time", taskID)
+	respBody, err := c.makeRequest("POST", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Data map[string]interface{} `json:"data"`
+	}
+	if err := json.Unmarshal(respBody, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal ai estimate-time response: %w", err)
+	}
+	if resp.Data == nil {
+		resp.Data = map[string]interface{}{}
+	}
+	return resp.Data, nil
+}
+
+func (c *Client) AIRisks(taskID string) (map[string]interface{}, error) {
+	endpoint := fmt.Sprintf("/tasks/%s/ai/risks", taskID)
+	respBody, err := c.makeRequest("POST", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Data map[string]interface{} `json:"data"`
+	}
+	if err := json.Unmarshal(respBody, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal ai risks response: %w", err)
+	}
+	if resp.Data == nil {
+		resp.Data = map[string]interface{}{}
+	}
+	return resp.Data, nil
+}
+
+func (c *Client) AIDependencies(taskID string) (map[string]interface{}, error) {
+	endpoint := fmt.Sprintf("/tasks/%s/ai/dependencies", taskID)
+	respBody, err := c.makeRequest("POST", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Data map[string]interface{} `json:"data"`
+	}
+	if err := json.Unmarshal(respBody, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal ai dependencies response: %w", err)
+	}
+	if resp.Data == nil {
+		resp.Data = map[string]interface{}{}
+	}
+	return resp.Data, nil
 }
 
 // Memory API methods
@@ -358,8 +490,8 @@ func (c *Client) DeleteContext(id string) error {
 }
 
 func (c *Client) UseContext(name string) (*models.Context, error) {
-	reqBody := map[string]interface{}{"name": name}
-	respBody, err := c.makeRequest("POST", "/contexts/use", reqBody)
+	endpoint := "/contexts/" + url.PathEscape(name) + "/use"
+	respBody, err := c.makeRequest("POST", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -391,26 +523,104 @@ func (c *Client) CreateAnnotation(taskID, content string) (*models.Annotation, e
 }
 
 func (c *Client) ListAnnotations(taskID string) ([]models.Annotation, error) {
-	endpoint := "/annotations"
-	if taskID != "" {
-		endpoint += "?task_id=" + taskID
+	if strings.TrimSpace(taskID) == "" {
+		return nil, fmt.Errorf("task ID is required")
 	}
+	// Backend exposes annotations embedded in task payload
+	t, err := c.GetTask(taskID)
+	if err != nil {
+		return nil, err
+	}
+	return t.Annotations, nil
+}
 
+func (c *Client) BulkUpdateTasks(taskIDs []string, status *string, projectID *string, priority *string) error {
+	req := map[string]interface{}{
+		"taskIds": taskIDs,
+	}
+	if status != nil {
+		req["status"] = *status
+	}
+	if projectID != nil {
+		req["projectId"] = *projectID
+	}
+	if priority != nil {
+		req["priority"] = *priority
+	}
+	_, err := c.makeRequest("PUT", "/tasks/bulk-update", req)
+	return err
+}
+
+func (c *Client) BulkDeleteTasks(taskIDs []string) error {
+	req := map[string]interface{}{
+		"taskIds": taskIDs,
+	}
+	_, err := c.makeRequest("POST", "/tasks/bulk-delete", req)
+	return err
+}
+
+func (c *Client) CreateSubtask(taskID, description string) (*models.Subtask, error) {
+	req := map[string]string{"description": description}
+	endpoint := fmt.Sprintf("/tasks/%s/subtasks", taskID)
+	respBody, err := c.makeRequest("POST", endpoint, req)
+	if err != nil {
+		return nil, err
+	}
+	var sub models.Subtask
+	if err := json.Unmarshal(respBody, &sub); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal subtask: %w", err)
+	}
+	return &sub, nil
+}
+
+func (c *Client) ListSubtasks(taskID string) ([]models.Subtask, error) {
+	endpoint := fmt.Sprintf("/tasks/%s/subtasks", taskID)
 	respBody, err := c.makeRequest("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	var response models.AnnotationListResponse
-	if err := json.Unmarshal(respBody, &response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	var subs []models.Subtask
+	if err := json.Unmarshal(respBody, &subs); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal subtasks: %w", err)
 	}
+	return subs, nil
+}
 
-	if !response.Success {
-		return nil, fmt.Errorf("API error")
+func (c *Client) CreateMemoryTaskLink(taskID, memoryID, relationType string) ([]byte, error) {
+	req := map[string]interface{}{
+		"task_id":   taskID,
+		"memory_id": memoryID,
 	}
+	if strings.TrimSpace(relationType) != "" {
+		req["relation_type"] = relationType
+	}
+	return c.makeRequest("POST", "/memory-task-links", req)
+}
 
-	return response.Data, nil
+func (c *Client) ListTaskMemories(taskID string) ([]models.Memory, error) {
+	endpoint := fmt.Sprintf("/tasks/%s/memories", taskID)
+	respBody, err := c.makeRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	var memories []models.Memory
+	if err := json.Unmarshal(respBody, &memories); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal task memories: %w", err)
+	}
+	return memories, nil
+}
+
+func (c *Client) ListMemoryTasks(memoryID string) ([]models.Task, error) {
+	endpoint := fmt.Sprintf("/memories/%s/tasks", memoryID)
+	respBody, err := c.makeRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	var tasks []models.Task
+	if err := json.Unmarshal(respBody, &tasks); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal memory tasks: %w", err)
+	}
+	return tasks, nil
 }
 
 // Auth API methods
