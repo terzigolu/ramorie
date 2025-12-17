@@ -44,7 +44,7 @@ func projectListCmd() *cli.Command {
 			}
 
 			if len(projects) == 0 {
-				fmt.Println("No projects found. Use 'jbraincli project create' to add one.")
+				fmt.Println("No projects found. Use 'jbrain project create' to add one.")
 				return nil
 			}
 
@@ -155,7 +155,7 @@ func projectUseCmd() *cli.Command {
 			projectIdentifier := c.Args().First()
 
 			client := api.NewClient()
-			
+
 			// First, get all projects to find the correct ID
 			projects, err := client.ListProjects()
 			if err != nil {
@@ -165,7 +165,7 @@ func projectUseCmd() *cli.Command {
 
 			var targetProjectID string
 			var targetProjectName string
-			
+
 			// Try to find project by name or ID
 			for _, p := range projects {
 				if p.Name == projectIdentifier || p.ID.String()[:8] == projectIdentifier || p.ID.String() == projectIdentifier {
@@ -302,5 +302,3 @@ func projectUpdateCmd() *cli.Command {
 		},
 	}
 }
-	
- 
