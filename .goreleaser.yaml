@@ -54,7 +54,7 @@ brews:
       owner: terzigolu
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    folder: Formula
+    directory: Formula
     homepage: "https://josephsbrain.com"
     description: "AI-powered task and memory management CLI for JosephsBrain"
     license: "MIT"
