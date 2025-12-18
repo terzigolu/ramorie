@@ -1,99 +1,135 @@
-# JosephsBrain CLI
+<p align="center">
+  <img src="https://josephsbrain.com/logo.png" alt="JosephsBrain" width="120" height="120">
+</p>
 
-A powerful command-line interface for managing tasks, projects, and memories with JosephsBrain.
+<h1 align="center">JosephsBrain CLI</h1>
+
+<p align="center">
+  <strong>AI-powered task and memory management for developers and AI agents</strong>
+</p>
+
+<p align="center">
+  <a href="https://josephsbrain.com">Website</a> •
+  <a href="https://josephsbrain.com/docs">Documentation</a> •
+  <a href="https://github.com/terzigolu/josepshbrain-go/releases">Releases</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/v/release/terzigolu/josepshbrain-go?style=flat-square&color=00d4aa" alt="Release">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue?style=flat-square" alt="Platform">
+  <img src="https://img.shields.io/badge/go-%3E%3D1.21-00ADD8?style=flat-square&logo=go" alt="Go Version">
+  <img src="https://img.shields.io/github/license/terzigolu/josepshbrain-go?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/MCP-compatible-purple?style=flat-square" alt="MCP Compatible">
+</p>
+
+---
+
+## ✨ What is JosephsBrain?
+
+**JosephsBrain** is a productivity platform that combines task management with an intelligent memory system. The CLI provides:
+
+- **🎯 Smart Task Management** — Create, organize, and track tasks with priorities, tags, and progress
+- **🧠 Memory System** — Store and retrieve knowledge, insights, and learnings with semantic search
+- **🤖 AI Integration** — Gemini-powered suggestions, task analysis, and intelligent tagging
+- **📊 Visual Dashboards** — Kanban boards, burndown charts, and project statistics
+- **🔗 MCP Support** — Model Context Protocol integration for AI agents (Cursor, Claude, etc.)
+
+> **Perfect for developers, AI agents, and anyone who wants to capture knowledge while managing tasks.**
+
+---
 
 ## 🚀 Installation
 
-### Option 1: Using go install (Requires Go 1.24+)
+### Homebrew (Recommended for macOS/Linux)
+
+```bash
+brew tap terzigolu/homebrew-tap
+brew install jbraincli
+```
+
+### Go Install
+
 ```bash
 go install github.com/terzigolu/josepshbrain-go/cmd/jbraincli@latest
 ```
 
-### Option 2: Download Pre-built Binaries
+### Direct Download
 
-#### macOS
-```bash
-# For Intel Macs
-curl -L -o jbraincli https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-darwin-amd64
-chmod +x jbraincli
-sudo mv jbraincli /usr/local/bin/
+Download pre-built binaries from the [releases page](https://github.com/terzigolu/josepshbrain-go/releases/latest):
 
-# For Apple Silicon Macs (M1/M2)
-curl -L -o jbraincli https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-darwin-arm64
-chmod +x jbraincli
-sudo mv jbraincli /usr/local/bin/
-```
+| Platform | Architecture | Download |
+|----------|--------------|----------|
+| macOS | Apple Silicon (M1/M2/M3) | [jbraincli_darwin_arm64.tar.gz](https://github.com/terzigolu/josepshbrain-go/releases/latest) |
+| macOS | Intel | [jbraincli_darwin_amd64.tar.gz](https://github.com/terzigolu/josepshbrain-go/releases/latest) |
+| Linux | x86_64 | [jbraincli_linux_amd64.tar.gz](https://github.com/terzigolu/josepshbrain-go/releases/latest) |
+| Linux | ARM64 | [jbraincli_linux_arm64.tar.gz](https://github.com/terzigolu/josepshbrain-go/releases/latest) |
+| Windows | x86_64 | [jbraincli_windows_amd64.zip](https://github.com/terzigolu/josepshbrain-go/releases/latest) |
 
-#### Linux
-```bash
-# For AMD64
-curl -L -o jbraincli https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-linux-amd64
-chmod +x jbraincli
-sudo mv jbraincli /usr/local/bin/
+### Build from Source
 
-# For ARM64
-curl -L -o jbraincli https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-linux-arm64
-chmod +x jbraincli
-sudo mv jbraincli /usr/local/bin/
-```
-
-#### Windows
-1. Download the appropriate binary:
-   - [AMD64](https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-windows-amd64.exe)
-   - [ARM64](https://github.com/terzigolu/josepshbrain-go/releases/latest/download/jbraincli-windows-arm64.exe)
-2. Rename to `jbraincli.exe` and add to your PATH
-
-### Option 3: One-line Installation Script
-
-#### macOS/Linux
-```bash
-curl -sSL https://raw.githubusercontent.com/terzigolu/josepshbrain-go/main/install.sh | bash
-```
-
-#### Windows (PowerShell)
-```powershell
-iwr -useb https://raw.githubusercontent.com/terzigolu/josepshbrain-go/main/install.ps1 | iex
-```
-
-## 🏁 Quick Start
-
-After installation, run:
-```bash
-jbraincli setup register
-```
-
-## 📚 Usage
-
-See the full documentation in our [user guide](jbraincli_quick_reference_updated.md).
-
-Quick commands:
-- `jbraincli task create "My new task"` - Create a task
-- `jbraincli task list` - List all tasks
-- `jbraincli project create "My Project"` - Create a project
-- `jbraincli kanban` - View tasks in kanban board
-- `jbraincli remember "Important information"` - Store a memory
-
-## 🔧 Development
-
-To build from source:
 ```bash
 git clone https://github.com/terzigolu/josepshbrain-go.git
 cd josepshbrain-go
 go build -o jbraincli ./cmd/jbraincli
 ```
 
+---
+
+## 🏁 Quick Start
+
+### 1. Create an Account
+
+```bash
+jbraincli setup register
+```
+
+### 2. Create Your First Project
+
+```bash
+jbraincli project init "My Project"
+jbraincli project use "My Project"
+```
+
+### 3. Start Managing Tasks
+
+```bash
+# Create a task
+jbraincli task create "Implement user authentication" --priority H
+
+# View your kanban board
+jbraincli kanban
+
+# Start working on a task
+jbraincli task start <task-id>
+
+# Mark it complete
+jbraincli task done <task-id>
+```
+
+### 4. Store Knowledge
+
+```bash
+# Remember important insights
+jbraincli remember "Use bcrypt with 12 rounds for password hashing"
+
+# Search your memories
+jbraincli memory recall "password"
+```
+
+---
+
 ## 📋 Core Features
 
 ### 1. **Task Management**
 - ✅ Create, list, start, complete tasks
-- ✅ Priority levels (H/M/L) 
+- ✅ Priority levels (H/M/L)
 - ✅ Status tracking (TODO/IN_PROGRESS/IN_REVIEW/COMPLETED)
 - ✅ Progress tracking (0-100%)
 - ✅ Task annotations and notes
 - ✅ Detailed task information display
 - 🔄 Task dependencies (coming soon)
 
-### 2. **Project Organization** 
+### 2. **Project Organization**
 - ✅ Multi-project support
 - ✅ Active project switching
 - ✅ Project-scoped tasks and memories
@@ -154,7 +190,7 @@ If you prefer, you can set the `GEMINI_API_KEY` environment variable instead of 
 
 **Key Tables:**
 - `tasks` - Task management
-- `projects` - Project organization  
+- `projects` - Project organization
 - `memory_items` - Knowledge storage
 - `contexts` - Context grouping
 - `annotations` - Task notes
@@ -166,7 +202,7 @@ If you prefer, you can set the `GEMINI_API_KEY` environment variable instead of 
 ```bash
 # Project lifecycle
 jbraincli project init <name>              # Create new project
-jbraincli project use [name]               # Set active project  
+jbraincli project use [name]               # Set active project
 jbraincli project list                     # List all projects
 jbraincli project delete <name>            # Delete project
 
@@ -390,7 +426,7 @@ All data is persisted and synchronized across CLI sessions.
 
 ### **Priority Levels**
 - 🔴 `H` (High) - Urgent/Critical
-- 🟡 `M` (Medium) - Normal priority  
+- 🟡 `M` (Medium) - Normal priority
 - 🟢 `L` (Low) - Nice to have
 
 ## 💡 AI Agent Best Practices
@@ -417,10 +453,10 @@ All data is persisted and synchronized across CLI sessions.
 5. **Capture learnings in the moment**: Don't wait until the end to record insights
 
 ### **Common Anti-Patterns to Avoid:**
-❌ Creating tasks for already completed work  
-❌ Using remember for future work items  
-❌ Storing implementation details in memories instead of task annotations  
-❌ Creating duplicate tasks without checking existing ones  
+❌ Creating tasks for already completed work
+❌ Using remember for future work items
+❌ Storing implementation details in memories instead of task annotations
+❌ Creating duplicate tasks without checking existing ones
 ❌ Forgetting to mark tasks as complete
 
 ## 🔌 Integration
@@ -433,51 +469,121 @@ The CLI integrates with:
 
 This tool is designed for developers and AI agents who want powerful task management with persistent memory storage, all accessible through a beautiful command-line interface.
 
-## 🚀 Distribution & Release
+## 🤖 MCP Integration (AI Agents)
 
-### For Maintainers
-```bash
-# Create a new release
-git tag v1.0.2
-git push origin v1.0.2
+JosephsBrain CLI includes a built-in **Model Context Protocol (MCP)** server, making it compatible with AI coding assistants like **Cursor**, **Claude Desktop**, and other MCP-enabled tools.
 
-# This triggers GitHub Actions to:
-# - Build binaries for all platforms (Linux, macOS, Windows)
-# - Create GitHub release with automated changelog
-# - Upload assets: .tar.gz for Unix, .zip for Windows
+### Setup for Cursor/Claude
+
+Add to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "jbrain": {
+      "command": "jbraincli",
+      "args": ["mcp", "serve"]
+    }
+  }
+}
 ```
 
-### Current Status
-- **✅ GitHub Releases**: Automated via GoReleaser + GitHub Actions
-- **✅ GitHub CLI Install**: Primary installation method (works immediately)
-- **✅ Direct Download**: Manual download from releases page
-- **✅ Source Build**: Clone and compile locally
-- **❌ Homebrew**: Unavailable (requires public repository)
+### Available MCP Tools
 
-### Installation Methods Available
-- **GitHub CLI**: `gh release download --repo terzigolu/josepshbrain-go ...` (Recommended)
-- **Direct Download**: [GitHub releases page](https://github.com/terzigolu/josepshbrain-go/releases)
-- **Source Build**: `git clone && make install`
+| Tool | Description |
+|------|-------------|
+| `create_task` | Create a new task |
+| `list_tasks` | List tasks with filters |
+| `complete_task` | Mark task as complete |
+| `add_memory` | Store a memory/insight |
+| `search_memories` | Semantic search memories |
+| `get_next_tasks` | Get prioritized next tasks |
+| `analyze_task_risks` | AI risk analysis |
+| `analyze_task_dependencies` | Dependency analysis |
 
 ---
 
-## 📝 Quick Reference Card
+## 📊 Reports & Analytics
 
 ```bash
-# Essential Commands (Most Used)
-jbraincli project list                     # Check active project
-jbraincli kanban                          # Overview of all work
-jbraincli task create "Description"       # New work item
-jbraincli task info <id>                  # Task details + notes
-jbraincli task start <id>                 # Begin working
-jbraincli annotate <id> "Progress note"   # Document progress
-jbraincli remember "Learning or insight"  # Store knowledge
-jbraincli task done <id>                  # Mark complete
+# Project statistics
+jbraincli stats
 
-# Decision Tree
-# Need to do work? → task create
-# Making progress? → annotate  
-# Learned something? → remember
-# Need overview? → kanban
-# Need details? → task info
-``` 
+# Task history (last 7 days)
+jbraincli history -d 7
+
+# Burndown chart
+jbraincli burndown
+
+# Project summary
+jbraincli summary
+```
+
+---
+
+## 🔧 Configuration
+
+### API Key Storage
+
+Your credentials are stored securely in `~/.jbrain/config.json`.
+
+### Gemini AI Setup (Optional)
+
+For AI-powered features (suggestions, analysis, auto-tagging):
+
+```bash
+jbraincli set-gemini-key
+```
+
+Or set the environment variable:
+```bash
+export GEMINI_API_KEY="your-api-key"
+```
+
+---
+
+## 📝 Quick Reference
+
+```bash
+# Essential Commands
+jbraincli project list                     # Check active project
+jbraincli kanban                           # Visual task board
+jbraincli task create "Description"        # New task
+jbraincli task info <id>                   # Task details
+jbraincli task start <id>                  # Begin working
+jbraincli annotate <id> "Note"             # Add progress note
+jbraincli remember "Insight"               # Store knowledge
+jbraincli task done <id>                   # Complete task
+
+# Decision Guide
+# Need to do work?      → task create
+# Making progress?      → annotate
+# Learned something?    → remember
+# Need overview?        → kanban
+# Need details?         → task info
+```
+
+---
+
+## 🌐 Links
+
+- **Website:** [josephsbrain.com](https://josephsbrain.com)
+- **Documentation:** [josephsbrain.com/docs](https://josephsbrain.com/docs)
+- **Releases:** [GitHub Releases](https://github.com/terzigolu/josepshbrain-go/releases)
+- **Homebrew Tap:** [terzigolu/homebrew-tap](https://github.com/terzigolu/homebrew-tap)
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/terzigolu">terzigolu</a>
+</p>
+
+<p align="center">
+  <a href="https://josephsbrain.com">🌐 josephsbrain.com</a>
+</p>
