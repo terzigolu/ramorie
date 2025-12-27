@@ -16,6 +16,9 @@ type Memory struct {
 	CreatedAt time.Time  `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time  `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 
+	// Active task linking (returned from API when memory is auto-linked)
+	LinkedTaskID *uuid.UUID `json:"linked_task_id,omitempty" gorm:"-"`
+
 	// Foreign Key Relations
 	Project *Project `json:"project,omitempty" gorm:"foreignKey:ProjectID;constraint:OnDelete:SET NULL"`
 	Context *Context `json:"context,omitempty" gorm:"foreignKey:ContextID;constraint:OnDelete:SET NULL"`

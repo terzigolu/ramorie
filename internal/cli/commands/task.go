@@ -23,7 +23,9 @@ func NewTaskCommand() *cli.Command {
 			taskShowCmd(),
 			taskUpdateCmd(),
 			taskStartCmd(),
+			taskStopCmd(),
 			taskCompleteCmd(),
+			taskActiveCmd(),
 			taskDeleteCmd(),
 			taskElaborateCmd(),
 			taskDuplicateCmd(),
@@ -280,52 +282,124 @@ func taskUpdateCmd() *cli.Command {
 	}
 }
 
-// taskStartCmd starts a task.
+// taskStartCmd starts a task and sets it as the active task for memory linking.
 func taskStartCmd() *cli.Command {
 	return &cli.Command{
 		Name:      "start",
-		Usage:     "Start a task (set status to IN_PROGRESS)",
+		Usage:     "Start a task (set as active + IN_PROGRESS, memories will auto-link)",
 		ArgsUsage: "[task-id]",
 		Action: func(c *cli.Context) error {
 			if c.NArg() == 0 {
 				return fmt.Errorf("task ID is required")
 			}
 			taskID := c.Args().First()
-			updateData := map[string]interface{}{"status": "IN_PROGRESS"}
 
 			client := api.NewClient()
-			_, err := client.UpdateTask(taskID, updateData)
+			err := client.StartTask(taskID)
 			if err != nil {
 				fmt.Printf("Error starting task: %v\n", err)
 				return err
 			}
-			fmt.Printf("🚀 Task %s marked as IN_PROGRESS.\n", taskID[:8])
+			
+			shortID := taskID
+			if len(taskID) > 8 {
+				shortID = taskID[:8]
+			}
+			fmt.Printf("🚀 Task %s is now ACTIVE and IN_PROGRESS.\n", shortID)
+			fmt.Println("💡 New memories will automatically link to this task.")
 			return nil
 		},
 	}
 }
 
-// taskCompleteCmd completes a task.
+// taskCompleteCmd completes a task and clears active status.
 func taskCompleteCmd() *cli.Command {
 	return &cli.Command{
 		Name:      "complete",
 		Aliases:   []string{"done"},
-		Usage:     "Complete a task (set status to COMPLETED)",
+		Usage:     "Complete a task (COMPLETED + clears active status)",
 		ArgsUsage: "[task-id]",
 		Action: func(c *cli.Context) error {
 			if c.NArg() == 0 {
 				return fmt.Errorf("task ID is required")
 			}
 			taskID := c.Args().First()
-			updateData := map[string]interface{}{"status": "COMPLETED"}
 
 			client := api.NewClient()
-			_, err := client.UpdateTask(taskID, updateData)
+			err := client.CompleteTask(taskID)
 			if err != nil {
 				fmt.Printf("Error completing task: %v\n", err)
 				return err
 			}
-			fmt.Printf("✅ Task %s marked as COMPLETED.\n", taskID[:8])
+			
+			shortID := taskID
+			if len(taskID) > 8 {
+				shortID = taskID[:8]
+			}
+			fmt.Printf("✅ Task %s marked as COMPLETED.\n", shortID)
+			return nil
+		},
+	}
+}
+
+// taskStopCmd pauses work on a task (clears active status but keeps IN_PROGRESS).
+func taskStopCmd() *cli.Command {
+	return &cli.Command{
+		Name:    "stop",
+		Aliases: []string{"pause"},
+		Usage:   "Stop working on a task (clears active, keeps IN_PROGRESS)",
+		ArgsUsage: "[task-id]",
+		Action: func(c *cli.Context) error {
+			if c.NArg() == 0 {
+				return fmt.Errorf("task ID is required")
+			}
+			taskID := c.Args().First()
+
+			client := api.NewClient()
+			err := client.StopTask(taskID)
+			if err != nil {
+				fmt.Printf("Error stopping task: %v\n", err)
+				return err
+			}
+			
+			shortID := taskID
+			if len(taskID) > 8 {
+				shortID = taskID[:8]
+			}
+			fmt.Printf("⏸️  Task %s paused. No longer the active task.\n", shortID)
+			fmt.Println("💡 New memories will NOT auto-link until you start a task again.")
+			return nil
+		},
+	}
+}
+
+// taskActiveCmd shows the currently active task.
+func taskActiveCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "active",
+		Usage: "Show the currently active task (for memory auto-linking)",
+		Action: func(c *cli.Context) error {
+			client := api.NewClient()
+			task, err := client.GetActiveTask()
+			if err != nil {
+				fmt.Printf("Error getting active task: %v\n", err)
+				return err
+			}
+			
+			if task == nil {
+				fmt.Println("📭 No active task set.")
+				fmt.Println("💡 Use 'ramorie task start <task-id>' to set one.")
+				return nil
+			}
+			
+			fmt.Println("🎯 Active Task:")
+			fmt.Println(strings.Repeat("-", 50))
+			fmt.Printf("ID:       %s\n", task.ID.String()[:8])
+			fmt.Printf("Title:    %s\n", task.Title)
+			fmt.Printf("Status:   %s\n", task.Status)
+			fmt.Printf("Priority: %s\n", task.Priority)
+			fmt.Println(strings.Repeat("-", 50))
+			fmt.Println("💡 New memories will automatically link to this task.")
 			return nil
 		},
 	}

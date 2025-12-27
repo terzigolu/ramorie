@@ -319,6 +319,30 @@ func (c *Client) CompleteTask(taskID string) error {
 	return err
 }
 
+func (c *Client) StopTask(taskID string) error {
+	_, err := c.makeRequest("POST", "/tasks/"+taskID+"/stop", nil)
+	return err
+}
+
+func (c *Client) GetActiveTask() (*models.Task, error) {
+	respBody, err := c.makeRequest("GET", "/tasks/active", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check for empty response (no active task)
+	if len(respBody) == 0 || string(respBody) == "{}" || string(respBody) == "null" {
+		return nil, nil
+	}
+
+	var task models.Task
+	if err := json.Unmarshal(respBody, &task); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal active task: %w", err)
+	}
+
+	return &task, nil
+}
+
 func (c *Client) ElaborateTask(taskID string) (*models.Annotation, error) {
 	endpoint := fmt.Sprintf("/tasks/%s/elaborate", taskID)
 	respBody, err := c.makeRequest("POST", endpoint, nil)

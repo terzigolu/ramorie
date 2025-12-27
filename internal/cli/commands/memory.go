@@ -66,6 +66,11 @@ func rememberCmd() *cli.Command {
 				return err
 			}
 			fmt.Printf("🧠 Memory stored successfully! (ID: %s)\n", memory.ID.String()[:8])
+			
+			// Show if memory was auto-linked to active task
+			if memory.LinkedTaskID != nil {
+				fmt.Printf("🔗 Auto-linked to active task: %s\n", memory.LinkedTaskID.String()[:8])
+			}
 			return nil
 		},
 	}
