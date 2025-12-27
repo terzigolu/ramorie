@@ -949,3 +949,8 @@ func (c *Client) GetActiveContextPack() (*ContextPack, error) {
 	}
 	return response.Pack, nil
 }
+
+// SetActiveContextPack sets the active context pack (alias for UseContextPack)
+func (c *Client) SetActiveContextPack(id string) (*ContextPack, error) {
+	return c.UseContextPack(id)
+}
