@@ -705,3 +705,133 @@ func (c *Client) LoginUser(email, password string) (string, error) {
 
 	return response.Data.APIKey, nil
 }
+
+// Context Pack API methods
+
+// ContextPack represents a context pack
+type ContextPack struct {
+	ID          string    `json:"id"`
+	UserID      string    `json:"user_id"`
+	OrgID       *string   `json:"org_id,omitempty"`
+	Type        string    `json:"type"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description,omitempty"`
+	Status      string    `json:"status"`
+	Version     int       `json:"version"`
+	Tags        []string  `json:"tags"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// ContextPackListResponse represents the response from listing context packs
+type ContextPackListResponse struct {
+	ContextPacks []ContextPack `json:"context_packs"`
+	Total        int64         `json:"total"`
+	Limit        int           `json:"limit"`
+	Offset       int           `json:"offset"`
+}
+
+// ListContextPacks lists all context packs with optional filtering
+func (c *Client) ListContextPacks(packType, status, query string, limit, offset int) (*ContextPackListResponse, error) {
+	endpoint := "/context-packs"
+	params := url.Values{}
+	if packType != "" {
+		params.Add("type", packType)
+	}
+	if status != "" {
+		params.Add("status", status)
+	}
+	if query != "" {
+		params.Add("q", query)
+	}
+	if limit > 0 {
+		params.Add("limit", fmt.Sprintf("%d", limit))
+	}
+	if offset > 0 {
+		params.Add("offset", fmt.Sprintf("%d", offset))
+	}
+	if len(params) > 0 {
+		endpoint += "?" + params.Encode()
+	}
+
+	respBody, err := c.makeRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response ContextPackListResponse
+	if err := json.Unmarshal(respBody, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal context packs: %w", err)
+	}
+	return &response, nil
+}
+
+// GetContextPack gets a specific context pack by ID
+func (c *Client) GetContextPack(id string) (*ContextPack, error) {
+	endpoint := fmt.Sprintf("/context-packs/%s", id)
+	respBody, err := c.makeRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var pack ContextPack
+	if err := json.Unmarshal(respBody, &pack); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal context pack: %w", err)
+	}
+	return &pack, nil
+}
+
+// CreateContextPack creates a new context pack
+func (c *Client) CreateContextPack(name, packType, description, status string, tags []string) (*ContextPack, error) {
+	reqBody := map[string]interface{}{
+		"name": name,
+		"type": packType,
+	}
+	if description != "" {
+		reqBody["description"] = description
+	}
+	if status != "" {
+		reqBody["status"] = status
+	}
+	if len(tags) > 0 {
+		reqBody["tags"] = tags
+	}
+
+	respBody, err := c.makeRequest("POST", "/context-packs", reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var pack ContextPack
+	if err := json.Unmarshal(respBody, &pack); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal context pack: %w", err)
+	}
+	return &pack, nil
+}
+
+// UpdateContextPack updates an existing context pack
+func (c *Client) UpdateContextPack(id string, updates map[string]interface{}) (*ContextPack, error) {
+	endpoint := fmt.Sprintf("/context-packs/%s", id)
+	respBody, err := c.makeRequest("PUT", endpoint, updates)
+	if err != nil {
+		return nil, err
+	}
+
+	var pack ContextPack
+	if err := json.Unmarshal(respBody, &pack); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal context pack: %w", err)
+	}
+	return &pack, nil
+}
+
+// DeleteContextPack deletes a context pack
+func (c *Client) DeleteContextPack(id string) error {
+	endpoint := fmt.Sprintf("/context-packs/%s", id)
+	_, err := c.makeRequest("DELETE", endpoint, nil)
+	return err
+}
+
+// SetActiveContextPack sets a context pack as active (published)
+func (c *Client) SetActiveContextPack(id string) (*ContextPack, error) {
+	return c.UpdateContextPack(id, map[string]interface{}{"status": "published"})
+}

@@ -190,6 +190,37 @@ func ToolDefinitions() []toolDef {
 			Description: "Belirtilen bağlamı (context) etkinleştir",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"name": map[string]interface{}{"type": "string"}}, "required": []string{"name"}},
 		},
+		// Context Pack tools
+		{
+			Name:        "list_context_packs",
+			Description: "Context pack'leri listele (Active Context). Tip, durum ve arama ile filtrelenebilir.",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"type": map[string]interface{}{"type": "string", "description": "Pack tipi: project, integration, decision, custom"}, "status": map[string]interface{}{"type": "string", "description": "Pack durumu: draft, published"}, "query": map[string]interface{}{"type": "string", "description": "İsim/açıklama araması"}, "limit": map[string]interface{}{"type": "number"}}},
+		},
+		{
+			Name:        "get_context_pack",
+			Description: "Belirli bir context pack'in detaylarını getir",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"packId": map[string]interface{}{"type": "string"}}, "required": []string{"packId"}},
+		},
+		{
+			Name:        "create_context_pack",
+			Description: "Yeni bir context pack oluştur",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"name": map[string]interface{}{"type": "string"}, "type": map[string]interface{}{"type": "string", "description": "Pack tipi: project, integration, decision, custom"}, "description": map[string]interface{}{"type": "string"}, "status": map[string]interface{}{"type": "string", "description": "Pack durumu: draft, published"}, "tags": map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}}}, "required": []string{"name", "type"}},
+		},
+		{
+			Name:        "update_context_pack",
+			Description: "Mevcut bir context pack'i güncelle",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"packId": map[string]interface{}{"type": "string"}, "name": map[string]interface{}{"type": "string"}, "type": map[string]interface{}{"type": "string"}, "description": map[string]interface{}{"type": "string"}, "status": map[string]interface{}{"type": "string"}, "tags": map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}}}, "required": []string{"packId"}},
+		},
+		{
+			Name:        "delete_context_pack",
+			Description: "Bir context pack'i sil",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"packId": map[string]interface{}{"type": "string"}}, "required": []string{"packId"}},
+		},
+		{
+			Name:        "activate_context_pack",
+			Description: "Bir context pack'i aktif (published) yap",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"packId": map[string]interface{}{"type": "string"}}, "required": []string{"packId"}},
+		},
 	}
 }
 
@@ -830,6 +861,115 @@ func CallTool(client *api.Client, name string, args map[string]interface{}) (int
 			return nil, errors.New("name is required")
 		}
 		return client.UseContext(name)
+
+	// Context Pack tools
+	case "list_context_packs":
+		packType, _ := args["type"].(string)
+		status, _ := args["status"].(string)
+		query, _ := args["query"].(string)
+		limit := toInt(args["limit"])
+
+		response, err := client.ListContextPacks(
+			strings.TrimSpace(packType),
+			strings.TrimSpace(status),
+			strings.TrimSpace(query),
+			limit,
+			0,
+		)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+
+	case "get_context_pack":
+		packID, _ := args["packId"].(string)
+		packID = strings.TrimSpace(packID)
+		if packID == "" {
+			return nil, errors.New("packId is required")
+		}
+		return client.GetContextPack(packID)
+
+	case "create_context_pack":
+		name, _ := args["name"].(string)
+		packType, _ := args["type"].(string)
+		description, _ := args["description"].(string)
+		status, _ := args["status"].(string)
+
+		name = strings.TrimSpace(name)
+		packType = strings.TrimSpace(packType)
+		if name == "" {
+			return nil, errors.New("name is required")
+		}
+		if packType == "" {
+			packType = "custom"
+		}
+
+		// Parse tags
+		var tags []string
+		if tagsRaw, ok := args["tags"].([]interface{}); ok {
+			for _, t := range tagsRaw {
+				if s, ok := t.(string); ok {
+					tags = append(tags, strings.TrimSpace(s))
+				}
+			}
+		}
+
+		return client.CreateContextPack(name, packType, strings.TrimSpace(description), strings.TrimSpace(status), tags)
+
+	case "update_context_pack":
+		packID, _ := args["packId"].(string)
+		packID = strings.TrimSpace(packID)
+		if packID == "" {
+			return nil, errors.New("packId is required")
+		}
+
+		updates := make(map[string]interface{})
+		if name, ok := args["name"].(string); ok && strings.TrimSpace(name) != "" {
+			updates["name"] = strings.TrimSpace(name)
+		}
+		if packType, ok := args["type"].(string); ok && strings.TrimSpace(packType) != "" {
+			updates["type"] = strings.TrimSpace(packType)
+		}
+		if description, ok := args["description"].(string); ok {
+			updates["description"] = strings.TrimSpace(description)
+		}
+		if status, ok := args["status"].(string); ok && strings.TrimSpace(status) != "" {
+			updates["status"] = strings.TrimSpace(status)
+		}
+		if tagsRaw, ok := args["tags"].([]interface{}); ok {
+			var tags []string
+			for _, t := range tagsRaw {
+				if s, ok := t.(string); ok {
+					tags = append(tags, strings.TrimSpace(s))
+				}
+			}
+			updates["tags"] = tags
+		}
+
+		return client.UpdateContextPack(packID, updates)
+
+	case "delete_context_pack":
+		packID, _ := args["packId"].(string)
+		packID = strings.TrimSpace(packID)
+		if packID == "" {
+			return nil, errors.New("packId is required")
+		}
+		if err := client.DeleteContextPack(packID); err != nil {
+			return nil, err
+		}
+		return map[string]interface{}{"ok": true, "deleted": packID}, nil
+
+	case "activate_context_pack":
+		packID, _ := args["packId"].(string)
+		packID = strings.TrimSpace(packID)
+		if packID == "" {
+			return nil, errors.New("packId is required")
+		}
+		pack, err := client.SetActiveContextPack(packID)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]interface{}{"ok": true, "pack": pack}, nil
 
 	default:
 		return nil, errors.New("tool not implemented")
