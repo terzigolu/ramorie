@@ -30,6 +30,7 @@ func main() {
 			commands.NewAnnotateCmd(),
 			commands.NewTaskAnnotationsCmd(),
 			commands.NewContextCommand(),
+			commands.NewContextPackCommand(), // Context packs (bundles of contexts)
 			commands.NewSubtaskCommand(),
 			commands.NewOverviewCommand(),
 			commands.NewMcpCommand(),

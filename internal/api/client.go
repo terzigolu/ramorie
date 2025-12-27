@@ -831,7 +831,39 @@ func (c *Client) DeleteContextPack(id string) error {
 	return err
 }
 
-// SetActiveContextPack sets a context pack as active (published)
-func (c *Client) SetActiveContextPack(id string) (*ContextPack, error) {
-	return c.UpdateContextPack(id, map[string]interface{}{"status": "published"})
+// UseContextPack activates a context pack and all its contexts
+func (c *Client) UseContextPack(id string) (*ContextPack, error) {
+	endpoint := fmt.Sprintf("/context-packs/%s/use", id)
+	respBody, err := c.makeRequest("POST", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response is { "message": "...", "pack": {...} }
+	var response struct {
+		Message string      `json:"message"`
+		Pack    ContextPack `json:"pack"`
+	}
+	if err := json.Unmarshal(respBody, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal context pack: %w", err)
+	}
+	return &response.Pack, nil
+}
+
+// GetActiveContextPack gets the currently active context pack
+func (c *Client) GetActiveContextPack() (*ContextPack, error) {
+	respBody, err := c.makeRequest("GET", "/context-packs/active", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response is { "pack": {...} or null, "message": "..." }
+	var response struct {
+		Pack    *ContextPack `json:"pack"`
+		Message string       `json:"message"`
+	}
+	if err := json.Unmarshal(respBody, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal active context pack: %w", err)
+	}
+	return response.Pack, nil
 }
