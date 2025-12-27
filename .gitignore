@@ -24,5 +24,7 @@ jbraincli-*
 # IDE files
 .idea/
 .vscode/
+.claude/
+.cursor/
 *.swp
 *~
