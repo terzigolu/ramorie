@@ -1,0 +1,40 @@
+{
+  "name": "ramorie",
+  "version": "1.4.0",
+  "description": "AI-powered task and memory management CLI",
+  "homepage": "https://ramorie.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/terzigolu/ramorie.git"
+  },
+  "license": "MIT",
+  "author": "terzigolu",
+  "bin": {
+    "ramorie": "./bin/ramorie"
+  },
+  "scripts": {
+    "postinstall": "node postinstall.js"
+  },
+  "keywords": [
+    "cli",
+    "task-management",
+    "ai",
+    "productivity",
+    "memory",
+    "notes",
+    "todo"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}
+
