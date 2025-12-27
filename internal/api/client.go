@@ -52,6 +52,54 @@ func NewClient() *Client {
 	}
 }
 
+// getAuthBaseURL returns the base URL without /v1 for auth endpoints
+func (c *Client) getAuthBaseURL() string {
+	// Remove /v1 suffix if present
+	baseURL := c.BaseURL
+	if strings.HasSuffix(baseURL, "/v1") {
+		baseURL = strings.TrimSuffix(baseURL, "/v1")
+	}
+	return baseURL
+}
+
+// makeAuthRequest makes an HTTP request to auth endpoints (at root level, not /v1)
+func (c *Client) makeAuthRequest(method, endpoint string, body interface{}) ([]byte, error) {
+	url := c.getAuthBaseURL() + endpoint
+
+	var reqBody io.Reader
+	if body != nil {
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		}
+		reqBody = bytes.NewBuffer(jsonBody)
+	}
+
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+	}
+
+	return respBody, nil
+}
+
 // makeRequest makes an HTTP request and returns the response body
 func (c *Client) makeRequest(method, endpoint string, body interface{}) ([]byte, error) {
 	url := c.BaseURL + endpoint
@@ -676,7 +724,8 @@ func (c *Client) RegisterUser(firstName, lastName, email, password string) (stri
 		"password":   password,
 	}
 
-	respBody, err := c.makeRequest("POST", "/auth/register", reqBody)
+	// Auth endpoints are at root level, not under /v1
+	respBody, err := c.makeAuthRequest("POST", "/auth/register", reqBody)
 	if err != nil {
 		return "", err
 	}
@@ -706,7 +755,8 @@ func (c *Client) LoginUser(email, password string) (string, error) {
 		"password": password,
 	}
 
-	respBody, err := c.makeRequest("POST", "/auth/login", reqBody)
+	// Auth endpoints are at root level, not under /v1
+	respBody, err := c.makeAuthRequest("POST", "/auth/login", reqBody)
 	if err != nil {
 		return "", err
 	}
