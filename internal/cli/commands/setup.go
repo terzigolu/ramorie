@@ -122,12 +122,12 @@ func handleUserLogin() error {
 	if err != nil {
 		fmt.Println(" ❌")
 		fmt.Println()
-		
+
 		// Use enhanced error parsing
 		errorMsg := apierrors.ParseAPIError(err)
 		fmt.Println(errorMsg)
 		fmt.Println()
-		
+
 		// Don't offer to register if account is locked or rate limited
 		if !apierrors.IsRateLimitError(err) && !strings.Contains(strings.ToLower(err.Error()), "locked") {
 			fmt.Print("Don't have an account? Open browser to register? (Y/n): ")

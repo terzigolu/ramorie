@@ -301,7 +301,7 @@ func taskStartCmd() *cli.Command {
 				fmt.Println(apierrors.ParseAPIError(err))
 				return err
 			}
-			
+
 			shortID := taskID
 			if len(taskID) > 8 {
 				shortID = taskID[:8]
@@ -332,7 +332,7 @@ func taskCompleteCmd() *cli.Command {
 				fmt.Println(apierrors.ParseAPIError(err))
 				return err
 			}
-			
+
 			shortID := taskID
 			if len(taskID) > 8 {
 				shortID = taskID[:8]
@@ -362,7 +362,7 @@ func taskStopCmd() *cli.Command {
 				fmt.Println(apierrors.ParseAPIError(err))
 				return err
 			}
-			
+
 			shortID := taskID
 			if len(taskID) > 8 {
 				shortID = taskID[:8]
@@ -386,13 +386,13 @@ func taskActiveCmd() *cli.Command {
 				fmt.Println(apierrors.ParseAPIError(err))
 				return err
 			}
-			
+
 			if task == nil {
 				fmt.Println("📭 No active task set.")
 				fmt.Println("💡 Use 'ramorie task start <task-id>' to set one.")
 				return nil
 			}
-			
+
 			fmt.Println("🎯 Active Task:")
 			fmt.Println(strings.Repeat("-", 50))
 			fmt.Printf("ID:       %s\n", task.ID.String()[:8])
