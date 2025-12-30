@@ -542,6 +542,91 @@ export GEMINI_API_KEY="your-api-key"
 
 ---
 
+## 🤖 MCP Integration (AI Agents)
+
+Ramorie includes a built-in MCP (Model Context Protocol) server, allowing AI agents like **Cursor**, **Windsurf**, **Claude Desktop**, and others to manage tasks and memories directly.
+
+### Quick Setup
+
+Run this command to get your MCP configuration:
+
+```bash
+ramorie mcp config
+```
+
+### Windsurf / Cursor Configuration
+
+Add the following to your MCP config file:
+
+**Windsurf:** `~/.codeium/windsurf/mcp_config.json`
+**Cursor:** `~/.cursor/mcp.json`
+
+#### If installed via Homebrew (macOS/Linux):
+```json
+{
+  "mcpServers": {
+    "ramorie": {
+      "command": "ramorie",
+      "args": ["mcp", "serve"]
+    }
+  }
+}
+```
+
+#### If installed via npm:
+```json
+{
+  "mcpServers": {
+    "ramorie": {
+      "command": "npx",
+      "args": ["-y", "@ramorie/cli", "mcp", "serve"]
+    }
+  }
+}
+```
+
+#### If installed via Go:
+```json
+{
+  "mcpServers": {
+    "ramorie": {
+      "command": "ramorie",
+      "args": ["mcp", "serve"]
+    }
+  }
+}
+```
+
+> **Note:** Make sure `ramorie` is in your PATH, or use the full path (e.g., `/opt/homebrew/bin/ramorie` or `~/.local/bin/ramorie`).
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `create_task` | Create a new task |
+| `list_tasks` | List tasks with filtering |
+| `get_next_tasks` | Get prioritized tasks for workflow |
+| `start_task` | Start working on a task |
+| `complete_task` | Mark task as completed |
+| `add_task_note` | Add annotation to a task |
+| `create_project` | Create a new project |
+| `list_projects` | List all projects |
+| `add_memory` | Store knowledge/insights |
+| `recall` | Search memories |
+| `get_stats` | Get task statistics |
+
+### Verify MCP Server
+
+```bash
+# List all available tools
+ramorie mcp tools
+
+# Start MCP server manually (for testing)
+ramorie mcp serve
+```
+
+---
+
 ## 📝 Quick Reference
 
 ```bash
