@@ -97,13 +97,13 @@ async function main() {
     console.log('   Extracting...');
     const extractedBinary = isWindows ? 'ramorie.exe' : 'ramorie';
     const extractedPath = path.join(tempDir, extractedBinary);
-    
+
     if (isWindows) {
       execSync(`powershell -command "Expand-Archive -Path '${tempFile}' -DestinationPath '${tempDir}' -Force"`, { stdio: 'pipe' });
     } else {
       execSync(`tar -xzf "${tempFile}" -C "${tempDir}"`, { stdio: 'pipe' });
     }
-    
+
     // Move only the binary to bin/ with new name
     if (fs.existsSync(extractedPath)) {
       fs.renameSync(extractedPath, binaryPath);
