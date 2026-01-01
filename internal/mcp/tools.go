@@ -101,6 +101,25 @@ func ToolDefinitions() []toolDef {
 		},
 
 		// ============================================================================
+		// 🔴 ESSENTIAL - Focus Management (SINGLE SOURCE OF TRUTH for active workspace)
+		// ============================================================================
+		{
+			Name:        "get_focus",
+			Description: "🔴 ESSENTIAL | Get user's current focus (active workspace). Returns the active context pack and its details.",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{}},
+		},
+		{
+			Name:        "set_focus",
+			Description: "🔴 ESSENTIAL | Set user's active focus (workspace). Switch to a different context pack.",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"packId": map[string]interface{}{"type": "string", "description": "Context pack ID to activate"}}, "required": []string{"packId"}},
+		},
+		{
+			Name:        "clear_focus",
+			Description: "🔴 ESSENTIAL | Clear user's active focus. Deactivates the current context pack.",
+			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{}},
+		},
+
+		// ============================================================================
 		// 🟡 COMMON - Task Management (Extended)
 		// ============================================================================
 		{
@@ -451,6 +470,70 @@ func CallTool(client *api.Client, name string, args map[string]interface{}) (int
 
 	case "get_active_task":
 		return client.GetActiveTask()
+
+	// ============================================================================
+	// FOCUS MANAGEMENT (SINGLE SOURCE OF TRUTH)
+	// ============================================================================
+	case "get_focus":
+		focus, err := client.GetFocus()
+		if err != nil {
+			return nil, err
+		}
+		if focus.ActivePack == nil {
+			return map[string]interface{}{
+				"active_context_pack_id": nil,
+				"active_pack":            nil,
+				"message":                "No active focus set. Use set_focus to activate a context pack.",
+			}, nil
+		}
+		return map[string]interface{}{
+			"active_context_pack_id": focus.ActiveContextPackID,
+			"active_pack": map[string]interface{}{
+				"id":             focus.ActivePack.ID,
+				"name":           focus.ActivePack.Name,
+				"description":    focus.ActivePack.Description,
+				"type":           focus.ActivePack.Type,
+				"status":         focus.ActivePack.Status,
+				"contexts_count": focus.ActivePack.ContextsCount,
+				"memories_count": focus.ActivePack.MemoriesCount,
+				"tasks_count":    focus.ActivePack.TasksCount,
+				"contexts":       focus.ActivePack.Contexts,
+			},
+		}, nil
+
+	case "set_focus":
+		packID, _ := args["packId"].(string)
+		packID = strings.TrimSpace(packID)
+		if packID == "" {
+			return nil, errors.New("packId is required")
+		}
+		focus, err := client.SetFocus(packID)
+		if err != nil {
+			return nil, err
+		}
+		result := map[string]interface{}{
+			"ok":      true,
+			"message": "Focus updated successfully",
+		}
+		if focus.ActivePack != nil {
+			result["active_pack"] = map[string]interface{}{
+				"id":             focus.ActivePack.ID,
+				"name":           focus.ActivePack.Name,
+				"contexts_count": focus.ActivePack.ContextsCount,
+				"memories_count": focus.ActivePack.MemoriesCount,
+				"tasks_count":    focus.ActivePack.TasksCount,
+			}
+		}
+		return result, nil
+
+	case "clear_focus":
+		if err := client.ClearFocus(); err != nil {
+			return nil, err
+		}
+		return map[string]interface{}{
+			"ok":      true,
+			"message": "Focus cleared",
+		}, nil
 
 	// ============================================================================
 	// MEMORY MANAGEMENT
@@ -919,12 +1002,12 @@ func toInt(v interface{}) int {
 func getRamorieInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"name":    "Ramorie",
-		"version": "1.10.0",
+		"version": "2.1.0",
 		"tagline": "AI Agent Memory & Task Management System",
 		"description": `Ramorie is a persistent memory and task management system for AI agents.
 It enables context preservation across sessions, task tracking, and knowledge storage.`,
 
-		"tool_count": 25,
+		"tool_count": 28,
 		"tool_priority_guide": map[string]string{
 			"🔴 ESSENTIAL": "Core functionality - use these regularly",
 			"🟡 COMMON":    "Frequently used - call when needed",
@@ -933,18 +1016,20 @@ It enables context preservation across sessions, task tracking, and knowledge st
 
 		"quickstart": []string{
 			"1. setup_agent → Get current context and recommendations",
-			"2. list_projects → See available projects",
-			"3. set_active_project → Set your working project",
-			"4. get_next_tasks → See prioritized TODO tasks",
-			"5. start_task → Begin working (enables memory auto-link)",
-			"6. add_memory → Store important discoveries",
-			"7. complete_task → Mark work as done",
+			"2. get_focus → Check your current active workspace",
+			"3. list_projects → See available projects",
+			"4. set_active_project → Set your working project",
+			"5. get_next_tasks → See prioritized TODO tasks",
+			"6. start_task → Begin working (enables memory auto-link)",
+			"7. add_memory → Store important discoveries",
+			"8. complete_task → Mark work as done",
 		},
 
 		"core_rules": []string{
 			"✅ Always check list_tasks before creating new tasks",
 			"✅ Use add_memory to persist important information",
 			"✅ Start a task before adding memories for auto-linking",
+			"✅ Use get_focus to check current workspace context",
 			"✅ Record architectural decisions with create_decision",
 			"❌ Never delete without explicit user approval",
 			"❌ Never create duplicate projects",
@@ -952,6 +1037,7 @@ It enables context preservation across sessions, task tracking, and knowledge st
 
 		"tools_by_category": map[string][]string{
 			"🔴 agent":    {"get_ramorie_info", "setup_agent"},
+			"🔴 focus":    {"get_focus", "set_focus", "clear_focus"},
 			"🔴 project":  {"list_projects", "set_active_project"},
 			"🔴 task":     {"list_tasks", "create_task", "get_task", "start_task", "complete_task", "get_next_tasks"},
 			"🔴 memory":   {"add_memory", "list_memories"},
@@ -982,8 +1068,9 @@ func getCursorRules(format string) map[string]interface{} {
 
 ### Start of Session
 1. ` + "`setup_agent`" + ` - Get current context
-2. ` + "`list_projects`" + ` - Check available projects
-3. ` + "`get_next_tasks`" + ` - See what needs attention
+2. ` + "`get_focus`" + ` - Check active workspace
+3. ` + "`list_projects`" + ` - Check available projects
+4. ` + "`get_next_tasks`" + ` - See what needs attention
 
 ### During Work
 1. ` + "`start_task`" + ` - Begin working (enables memory auto-link)
@@ -994,14 +1081,16 @@ func getCursorRules(format string) map[string]interface{} {
 ### Key Rules
 - ✅ Check ` + "`list_tasks`" + ` before creating new tasks
 - ✅ Use ` + "`add_memory`" + ` for important information
+- ✅ Use ` + "`get_focus`" + ` to check current workspace
 - ✅ Record decisions with ` + "`create_decision`" + `
 - ❌ Never delete without user approval
 - ❌ Never create duplicate projects
 
-## Available Tools (25 total)
+## Available Tools (28 total)
 
-### 🔴 ESSENTIAL (12)
+### 🔴 ESSENTIAL (15)
 - get_ramorie_info, setup_agent
+- get_focus, set_focus, clear_focus
 - list_projects, set_active_project
 - list_tasks, create_task, get_task, start_task, complete_task, get_next_tasks
 - add_memory, list_memories
@@ -1029,13 +1118,25 @@ func setupAgent(client *api.Client) (map[string]interface{}, error) {
 	result := map[string]interface{}{
 		"status":  "ready",
 		"message": "🧠 Ramorie agent session initialized",
-		"version": "1.10.0",
+		"version": "2.1.0",
 	}
 
 	// Get active project
 	cfg, _ := config.LoadConfig()
 	if cfg != nil && cfg.ActiveProjectID != "" {
 		result["active_project_id"] = cfg.ActiveProjectID
+	}
+
+	// Get current focus (active workspace)
+	focus, err := client.GetFocus()
+	if err == nil && focus != nil && focus.ActivePack != nil {
+		result["active_focus"] = map[string]interface{}{
+			"pack_id":        focus.ActiveContextPackID,
+			"pack_name":      focus.ActivePack.Name,
+			"contexts_count": focus.ActivePack.ContextsCount,
+			"memories_count": focus.ActivePack.MemoriesCount,
+			"tasks_count":    focus.ActivePack.TasksCount,
+		}
 	}
 
 	// List projects
@@ -1082,6 +1183,9 @@ func setupAgent(client *api.Client) (map[string]interface{}, error) {
 
 	// Recommendations
 	recommendations := []string{}
+	if result["active_focus"] == nil {
+		recommendations = append(recommendations, "💡 Set an active focus: set_focus (for workspace context)")
+	}
 	if result["active_project"] == nil {
 		recommendations = append(recommendations, "⚠️ Set an active project: set_active_project")
 	}

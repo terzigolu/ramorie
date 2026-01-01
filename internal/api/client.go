@@ -1107,6 +1107,75 @@ func (c *Client) DeleteDecision(id string) error {
 	return err
 }
 
+// User Focus API methods (SINGLE SOURCE OF TRUTH for active workspace)
+
+// UserFocus represents the user's current focus state
+type UserFocus struct {
+	ActiveContextPackID *string         `json:"active_context_pack_id"`
+	ActivePack          *FocusPackDetail `json:"active_pack"`
+}
+
+// FocusPackDetail represents a context pack in focus response
+type FocusPackDetail struct {
+	ID            string               `json:"id"`
+	Name          string               `json:"name"`
+	Description   *string              `json:"description,omitempty"`
+	Type          string               `json:"type"`
+	Status        string               `json:"status"`
+	ContextsCount int                  `json:"contexts_count"`
+	MemoriesCount int                  `json:"memories_count"`
+	TasksCount    int                  `json:"tasks_count"`
+	Contexts      []FocusContextPreview `json:"contexts"`
+}
+
+// FocusContextPreview represents a context preview in focus response
+type FocusContextPreview struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetFocus returns the user's current focus (active context pack)
+func (c *Client) GetFocus() (*UserFocus, error) {
+	respBody, err := c.makeRequest("GET", "/me/focus", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var focus UserFocus
+	if err := json.Unmarshal(respBody, &focus); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal focus: %w", err)
+	}
+	return &focus, nil
+}
+
+// SetFocus sets the user's active context pack
+func (c *Client) SetFocus(contextPackID string) (*UserFocus, error) {
+	reqBody := map[string]interface{}{
+		"context_pack_id": contextPackID,
+	}
+
+	respBody, err := c.makeRequest("POST", "/me/focus", reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response is { "message": "...", "focus": {...} }
+	var response struct {
+		Message string    `json:"message"`
+		Focus   UserFocus `json:"focus"`
+	}
+	if err := json.Unmarshal(respBody, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal focus: %w", err)
+	}
+	return &response.Focus, nil
+}
+
+// ClearFocus clears the user's active context pack
+func (c *Client) ClearFocus() error {
+	_, err := c.makeRequest("DELETE", "/me/focus", nil)
+	return err
+}
+
 // Organization API methods
 
 // Organization represents an organization
