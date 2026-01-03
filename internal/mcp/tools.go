@@ -262,9 +262,9 @@ func handleCreateProject(ctx context.Context, req *mcp.CallToolRequest, input Cr
 }
 
 type ListTasksInput struct {
-	Status  string  `json:"status"`
-	Project string  `json:"project"`
-	Limit   float64 `json:"limit"`
+	Status  string  `json:"status,omitempty"`
+	Project string  `json:"project,omitempty"`
+	Limit   float64 `json:"limit,omitempty"`
 }
 
 func handleListTasks(ctx context.Context, req *mcp.CallToolRequest, input ListTasksInput) (*mcp.CallToolResult, interface{}, error) {
@@ -289,8 +289,8 @@ func handleListTasks(ctx context.Context, req *mcp.CallToolRequest, input ListTa
 
 type CreateTaskInput struct {
 	Description string `json:"description"`
-	Priority    string `json:"priority"`
-	Project     string `json:"project"`
+	Priority    string `json:"priority,omitempty"`
+	Project     string `json:"project,omitempty"`
 }
 
 func handleCreateTask(ctx context.Context, req *mcp.CallToolRequest, input CreateTaskInput) (*mcp.CallToolResult, interface{}, error) {
@@ -360,8 +360,8 @@ func handleStopTask(ctx context.Context, req *mcp.CallToolRequest, input TaskIDI
 }
 
 type GetNextTasksInput struct {
-	Count   float64 `json:"count"`
-	Project string  `json:"project"`
+	Count   float64 `json:"count,omitempty"`
+	Project string  `json:"project,omitempty"`
 }
 
 func handleGetNextTasks(ctx context.Context, req *mcp.CallToolRequest, input GetNextTasksInput) (*mcp.CallToolResult, interface{}, error) {
@@ -436,9 +436,9 @@ func handleUpdateProgress(ctx context.Context, req *mcp.CallToolRequest, input U
 
 type SearchTasksInput struct {
 	Query   string  `json:"query"`
-	Status  string  `json:"status"`
-	Project string  `json:"project"`
-	Limit   float64 `json:"limit"`
+	Status  string  `json:"status,omitempty"`
+	Project string  `json:"project,omitempty"`
+	Limit   float64 `json:"limit,omitempty"`
 }
 
 func handleSearchTasks(ctx context.Context, req *mcp.CallToolRequest, input SearchTasksInput) (*mcp.CallToolResult, interface{}, error) {
@@ -475,7 +475,7 @@ func handleGetActiveTask(ctx context.Context, req *mcp.CallToolRequest, input Em
 
 type AddMemoryInput struct {
 	Content string `json:"content"`
-	Project string `json:"project"`
+	Project string `json:"project,omitempty"`
 }
 
 func handleAddMemory(ctx context.Context, req *mcp.CallToolRequest, input AddMemoryInput) (*mcp.CallToolResult, interface{}, error) {
@@ -495,9 +495,9 @@ func handleAddMemory(ctx context.Context, req *mcp.CallToolRequest, input AddMem
 }
 
 type ListMemoriesInput struct {
-	Project string  `json:"project"`
-	Term    string  `json:"term"`
-	Limit   float64 `json:"limit"`
+	Project string  `json:"project,omitempty"`
+	Term    string  `json:"term,omitempty"`
+	Limit   float64 `json:"limit,omitempty"`
 }
 
 func handleListMemories(ctx context.Context, req *mcp.CallToolRequest, input ListMemoriesInput) (*mcp.CallToolResult, interface{}, error) {
@@ -548,12 +548,12 @@ func handleGetMemory(ctx context.Context, req *mcp.CallToolRequest, input GetMem
 
 type RecallInput struct {
 	Term             string  `json:"term"`
-	Project          string  `json:"project"`
-	Tag              string  `json:"tag"`
-	LinkedTask       bool    `json:"linked_task"`
-	IncludeRelations bool    `json:"include_relations"`
-	Limit            float64 `json:"limit"`
-	MinScore         float64 `json:"min_score"`
+	Project          string  `json:"project,omitempty"`
+	Tag              string  `json:"tag,omitempty"`
+	LinkedTask       bool    `json:"linked_task,omitempty"`
+	IncludeRelations bool    `json:"include_relations,omitempty"`
+	Limit            float64 `json:"limit,omitempty"`
+	MinScore         float64 `json:"min_score,omitempty"`
 }
 
 func handleRecall(ctx context.Context, req *mcp.CallToolRequest, input RecallInput) (*mcp.CallToolResult, map[string]interface{}, error) {
@@ -785,11 +785,11 @@ func handleClearFocus(ctx context.Context, req *mcp.CallToolRequest, input Empty
 
 type CreateDecisionInput struct {
 	Title        string `json:"title"`
-	Description  string `json:"description"`
-	Status       string `json:"status"`
-	Area         string `json:"area"`
-	Context      string `json:"context"`
-	Consequences string `json:"consequences"`
+	Description  string `json:"description,omitempty"`
+	Status       string `json:"status,omitempty"`
+	Area         string `json:"area,omitempty"`
+	Context      string `json:"context,omitempty"`
+	Consequences string `json:"consequences,omitempty"`
 }
 
 func handleCreateDecision(ctx context.Context, req *mcp.CallToolRequest, input CreateDecisionInput) (*mcp.CallToolResult, interface{}, error) {
@@ -812,9 +812,9 @@ func handleCreateDecision(ctx context.Context, req *mcp.CallToolRequest, input C
 }
 
 type ListDecisionsInput struct {
-	Status string  `json:"status"`
-	Area   string  `json:"area"`
-	Limit  float64 `json:"limit"`
+	Status string  `json:"status,omitempty"`
+	Area   string  `json:"area,omitempty"`
+	Limit  float64 `json:"limit,omitempty"`
 }
 
 func handleListDecisions(ctx context.Context, req *mcp.CallToolRequest, input ListDecisionsInput) (*mcp.CallToolResult, interface{}, error) {
@@ -826,7 +826,7 @@ func handleListDecisions(ctx context.Context, req *mcp.CallToolRequest, input Li
 }
 
 type GetStatsInput struct {
-	Project string `json:"project"`
+	Project string `json:"project,omitempty"`
 }
 
 func handleGetStats(ctx context.Context, req *mcp.CallToolRequest, input GetStatsInput) (*mcp.CallToolResult, interface{}, error) {
@@ -843,7 +843,7 @@ func handleGetStats(ctx context.Context, req *mcp.CallToolRequest, input GetStat
 
 type ExportProjectInput struct {
 	Project string `json:"project"`
-	Format  string `json:"format"`
+	Format  string `json:"format,omitempty"`
 }
 
 func handleExportProject(ctx context.Context, req *mcp.CallToolRequest, input ExportProjectInput) (*mcp.CallToolResult, map[string]interface{}, error) {
